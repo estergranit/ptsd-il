@@ -1,14 +1,20 @@
-import { BadRequestException, type PipeTransform } from '@nestjs/common';
+import { UnprocessableEntityException, type PipeTransform } from '@nestjs/common';
 import type * as zod from 'zod';
 
 class ZodValidationPipe<T extends zod.ZodType> implements PipeTransform {
-  constructor(private schema: T) {}
+  readonly #schema;
 
-  transform(value: unknown) {
-    const result = this.schema.safeParse(value);
+  public constructor(schema: T) {
+    this.#schema = schema;
+  }
+
+  public transform(value: unknown) {
+    const result = this.#schema.safeParse(value);
 
     if (!result.success) {
-      throw new BadRequestException(result.error.flatten().fieldErrors);
+      throw new UnprocessableEntityException(result.error.issues.map((error) => {
+          return error.message;
+        }));
     }
 
     return result.data;

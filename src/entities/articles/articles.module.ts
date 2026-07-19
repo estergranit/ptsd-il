@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { Article } from './article.entity.ts';
+import { Article } from './articles.entity.ts';
 import { ArticlesService } from './articles.service.ts';
 import { ArticlesController } from './articles.controller.ts';
 import { AgeGroup } from '../age-groups/age-group.entity.ts';

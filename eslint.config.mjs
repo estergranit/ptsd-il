@@ -10,7 +10,7 @@ import tslint from 'typescript-eslint';
 /******************************************************************************************************/
 
 export default defineConfig({
- files: ['src/**/*.ts', 'tests/**/*.ts', 'knip.ts'],
+ files: ['src/**/*.ts', 'test/**/*.ts', 'knip.ts'],
  ignores: ['.prettierrc.ts', 'dist/'],
  plugins: {
  '@typescript-eslint': tslint.plugin,
@@ -214,7 +214,7 @@ export default defineConfig({
  '@typescript-eslint/no-empty-function': 'error',
  '@typescript-eslint/no-explicit-any': 'error',
  '@typescript-eslint/no-extra-non-null-assertion': 'error',
- '@typescript-eslint/no-extraneous-class': 'error',
+ '@typescript-eslint/no-extraneous-class': ['error', { allowWithDecorator: true }],
  '@typescript-eslint/no-floating-promises': 'error',
  '@typescript-eslint/no-for-in-array': 'error',
  // Note: you must disable the base rule as it can report incorrect errors
@@ -424,7 +424,6 @@ export default defineConfig({
  '@unicorn/prefer-switch': 'error',
  '@unicorn/prefer-top-level-await': 'error',
  '@unicorn/prefer-type-error': 'error',
- '@unicorn/prevent-abbreviations': ['error', { allowList: { i: true, j: true } }],
  '@unicorn/relative-url-style': 'error',
  '@unicorn/require-array-join-separator': 'error',
  '@unicorn/require-css-escape': 'error',

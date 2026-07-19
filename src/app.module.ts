@@ -5,7 +5,7 @@ import { AuthModule } from './auth/auth.module.ts';
 import { configuration } from './config/configuration.ts';
 import { AgeGroup } from './entities/age-groups/age-group.entity.ts';
 import { AgeGroupsModule } from './entities/age-groups/age-groups.module.ts';
-import { Article } from './entities/articles/article.entity.ts';
+import { Article } from './entities/articles/articles.entity.ts';
 import { ArticlesModule } from './entities/articles/articles.module.ts';
 import { Audience } from './entities/audiences/audiences.entity.ts';
 import { AudiencesModule } from './entities/audiences/audiences.module.ts';
@@ -20,29 +20,29 @@ import { UsersModule } from './entities/users/users.module.ts';
 
 @Module({
   imports: [
+    AgeGroupsModule,
+    ArticlesModule,
+    AudiencesModule,
+    AuthModule,
+    CategoriesModule,
+    CommunitiesModule,
     ConfigModule.forRoot({
       load: [configuration],
       ignoreEnvFile: true,
       cache: true,
       isGlobal: true,
     }),
+    LanguagesModule,
     TypeOrmModule.forRootAsync({
       inject: [ConfigService],
-      useFactory: (config: ConfigService) => ({
+      useFactory: (config: ConfigService) => {return ({
         type: 'postgres',
         url: config.get<string>('database.url'),
-        entities: [User, Language, Category, Audience, AgeGroup, Article, Community],
+        entities: [AgeGroup, Article, Audience, Category, Community, Language, User],
         synchronize: process.env.NODE_ENV !== 'production',
-      }),
+      })},
     }),
     UsersModule,
-    AuthModule,
-    LanguagesModule,
-    CategoriesModule,
-    AudiencesModule,
-    AgeGroupsModule,
-    ArticlesModule,
-    CommunitiesModule,
   ],
 })
 export class AppModule {}

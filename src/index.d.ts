@@ -1,4 +1,4 @@
-import { UserRoles } from './entities/users/user.entity';
+import type { UserRoles } from './entities/users/user.entity';
 
 declare global {
   namespace Express {

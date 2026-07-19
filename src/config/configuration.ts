@@ -20,11 +20,25 @@ function configuration() {
       }),
     },
     database: {
-      url: process.env.DATABASE_URL as string,
+      url: isString({
+        key: 'DATABASE_URL',
+        value: process.env.DATABASE_URL,
+        errorMessages
+      }),
     },
     jwt: {
-      secret: process.env.JWT_SECRET as string,
-      expiresIn: process.env.JWT_EXPIRES_IN as string,
+      secret: {
+        url: isString({
+          key: 'JWT_SECRET',
+          value: process.env.JWT_SECRET,
+          errorMessages
+        }),
+      },
+      expiresIn: isString({
+        key: 'JWT_EXPIRES_IN',
+        value: process.env.JWT_EXPIRES_IN,
+        errorMessages
+      }),
     },
   }
 
@@ -64,25 +78,25 @@ function isNumber(parameters: {
   return valueAsNumber;
 }
 
-// function isString(parameters: {
-//   key: string;
-//   value: unknown;
-//   errorMessages: string[];
-// }) {
-//   const { key, value, errorMessages } = parameters;
+function isString(parameters: {
+  key: string;
+  value: unknown;
+  errorMessages: string[];
+}) {
+  const { key, value, errorMessages } = parameters;
 
-//   if (typeof value !== 'string') {
-//     errorMessages.push(`* '${key}' must be a string`);
-//     return '';
-//   }
+  if (typeof value !== 'string') {
+    errorMessages.push(`* '${key}' must be a string`);
+    return '';
+  }
 
-//   if (value.length === 0) {
-//     errorMessages.push(`* '${key}' must not be empty`);
-//     return '';
-//   }
+  if (value.length === 0) {
+    errorMessages.push(`* '${key}' must not be empty`);
+    return '';
+  }
 
-//   return value;
-// }
+  return value;
+}
 
 // function isArray(parameters: {
 //   key: string;

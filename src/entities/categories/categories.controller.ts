@@ -16,23 +16,23 @@ import { CreateCategorySchema, type CreateCategoryDto, UpdateCategorySchema, typ
 
 @Controller('categories')
 export class CategoriesController {
-  constructor(private readonly categoriesService: CategoriesService) {}
+  public constructor(private readonly categoriesService: CategoriesService) {}
 
   @Get()
   @Public()
-  findAll(@Query('parentId') parentId?: string) {
+  public findAll(@Query('parentId') parentId?: string) {
     return this.categoriesService.findAll(parentId);
   }
 
   @Get(':id')
   @Public()
-  findOne(@Param('id') id: string) {
+  public findOne(@Param('id') id: string) {
     return this.categoriesService.findOne(id);
   }
 
   @Post()
   @AllowedRoles([UserRoles.ADMIN, UserRoles.MODERATOR])
-  create(
+  public create(
     @Body(new ZodValidationPipe(CreateCategorySchema)) body: CreateCategoryDto,
   ) {
     return this.categoriesService.save(body);
@@ -40,7 +40,7 @@ export class CategoriesController {
 
   @Put(':id')
   @AllowedRoles([UserRoles.ADMIN, UserRoles.MODERATOR])
-  update(
+  public update(
     @Param('id') id: string,
     @Body(new ZodValidationPipe(UpdateCategorySchema)) body: UpdateCategoryDto,
   ) {
@@ -49,7 +49,7 @@ export class CategoriesController {
 
   @Delete(':id')
   @AllowedRoles([UserRoles.ADMIN])
-  remove(@Param('id') id: string) {
+  public remove(@Param('id') id: string) {
     return this.categoriesService.remove(id);
   }
 }

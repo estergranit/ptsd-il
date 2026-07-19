@@ -6,7 +6,7 @@ export const CreateCommunitySchema = z.object({
   location: z.string().nullable().optional(),
   meetingType: z.string().nullable().optional(),
   organization: z.string().nullable().optional(),
-  contactUrl: z.string().url().nullable().optional(),
+  contactUrl: z.url().nullable().optional(),
   isActive: z.boolean().optional(),
 });
 

@@ -12,9 +12,13 @@ import type { UserRoles } from '../../entities/users/user.entity.ts';
 
 @Injectable()
 export class RolesGuard implements CanActivate {
-  constructor(private reflector: Reflector) {}
+  readonly #reflector;
 
-  canActivate(context: ExecutionContext): boolean {
+  public constructor(reflector: Reflector) {
+    this.#reflector = reflector;
+  }
+
+  public canActivate(context: ExecutionContext): boolean {
     if (this.#isRoutePublic(context)) {
       return true;
     }
@@ -28,14 +32,14 @@ export class RolesGuard implements CanActivate {
   }
 
   #isRoutePublic(context: ExecutionContext) {
-    return this.reflector.getAllAndOverride<boolean, DecoratorKey>('isPublic', [
+    return this.#reflector.getAllAndOverride<boolean, DecoratorKey>('isPublic', [
       context.getHandler(),
       context.getClass(),
     ]);
   }
 
   #hasAccess(context: ExecutionContext, request: Request) {
-    const allowedRoles = this.reflector.get<UserRoles[] | undefined, string>(
+    const allowedRoles = this.#reflector.get<UserRoles[] | undefined, string>(
       'allowedRoles',
       context.getHandler(),
     );
@@ -45,7 +49,7 @@ export class RolesGuard implements CanActivate {
       throw new InternalServerErrorException();
     }
 
-    return allowedRoles?.some((roleName) => {
+    return allowedRoles.some((roleName) => {
       return request.context.roles.includes(roleName);
     });
   }

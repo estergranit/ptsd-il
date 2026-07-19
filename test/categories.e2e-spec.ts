@@ -1,80 +1,156 @@
-import request from 'supertest';
-import { BASE_URL, getAdminToken, getModeratorToken } from './helpers/auth';
+/* eslint-disable @typescript-eslint/no-floating-promises */
 
-describe('Categories (e2e)', () => {
-  let adminToken: string;
-  let moderatorToken: string;
-  let createdId: string;
+import assert from 'node:assert/strict';
+import { after, suite, test } from 'node:test';
 
-  beforeAll(async () => {
-    [adminToken, moderatorToken] = await Promise.all([getAdminToken(), getModeratorToken()]);
+import { USERS } from './utilities/configuration.ts';
+import { randomString, validateUnauthenticated } from './utilities/functions.ts';
+import { HttpClient } from './utilities/http-client.ts';
+
+/******************************************************************************************************/
+
+const PATH = '/categories';
+const UNKNOWN_ID = '00000000-0000-0000-0000-000000000000';
+
+async function createCategory(httpClient: HttpClient, token: string, createdIds: string[]) {
+  const body = { slug: `e2e-${randomString(8)}`, name: 'E2E Test Category', isActive: true };
+
+  const response = await httpClient.post({
+    path: PATH,
+    token,
+    expectedStatusCode: 201,
+    options: { body: JSON.stringify(body), headers: { 'content-type': 'application/json' } },
   });
 
-  afterAll(async () => {
-    if (createdId) {
-      await request(BASE_URL)
-        .delete(`/api/categories/${createdId}`)
-        .set('Authorization', `Bearer ${adminToken}`);
-    }
+  const created = (await response!.json()) as { id: string; slug: string; name: string };
+  createdIds.push(created.id);
+
+  return { body, created };
+}
+
+/******************************************************************************************************/
+
+suite('Categories integration tests', () => {
+  const { admin, moderator } = USERS;
+  const httpClient = new HttpClient();
+  const createdIds: string[] = [];
+
+  after(async () => {
+    await Promise.all(
+      createdIds.map((id) => {
+        return httpClient.delete({
+          path: `${PATH}/${id}`,
+          token: admin.token,
+          expectedStatusCode: 200,
+          dropBody: true,
+        });
+      }),
+    );
   });
 
-  it('GET /api/categories → 200 with array', async () => {
-    const res = await request(BASE_URL).get('/api/categories');
-    expect(res.status).toBe(200);
-    expect(Array.isArray(res.body)).toBe(true);
+  suite('Read', () => {
+    test('Valid - list returns array', async () => {
+      const response = await httpClient.get({ path: PATH, token: 'none', expectedStatusCode: 200 });
+
+      assert.ok(Array.isArray(await response!.json()));
+    });
+
+    test('Valid - detail by id', async () => {
+      const { created } = await createCategory(httpClient, admin.token, createdIds);
+
+      const response = await httpClient.get({
+        path: `${PATH}/${created.id}`,
+        token: 'none',
+        expectedStatusCode: 200,
+      });
+      const body = (await response!.json()) as { id: string };
+
+      assert.strictEqual(body.id, created.id);
+    });
+
+    test('Invalid - unknown id returns 404', async () => {
+      await httpClient.get({
+        path: `${PATH}/${UNKNOWN_ID}`,
+        token: 'none',
+        expectedStatusCode: 404,
+        dropBody: true,
+      });
+    });
   });
 
-  it('POST /api/categories without auth → 401', async () => {
-    const res = await request(BASE_URL)
-      .post('/api/categories')
-      .send({ slug: 'test', name: 'Test' });
-    expect(res.status).toBe(401);
+  suite('Create', () => {
+    test('Valid - admin creates', async () => {
+      const { body, created } = await createCategory(httpClient, admin.token, createdIds);
+
+      assert.strictEqual(created.slug, body.slug);
+      assert.strictEqual(created.name, body.name);
+    });
+
+    test('Invalid - missing authorization token', async () => {
+      await httpClient.post({
+        path: PATH,
+        token: 'none',
+        expectedStatusCode: 401,
+        options: {
+          body: JSON.stringify({ slug: 'test', name: 'Test' }),
+          headers: { 'content-type': 'application/json' },
+        },
+        dropBody: true,
+      });
+    });
+
+    test('Invalid - unauthenticated', async () => {
+      await validateUnauthenticated({
+        httpClient,
+        path: PATH,
+        method: 'post',
+        body: { slug: 'test', name: 'Test' },
+      });
+    });
+
+    test('Invalid - bad slug', async () => {
+      await httpClient.post({
+        path: PATH,
+        token: admin.token,
+        expectedStatusCode: 400,
+        options: {
+          body: JSON.stringify({ slug: 'Invalid Slug!', name: 'Test' }),
+          headers: { 'content-type': 'application/json' },
+        },
+        dropBody: true,
+      });
+    });
   });
 
-  it('POST /api/categories with invalid slug → 400', async () => {
-    const res = await request(BASE_URL)
-      .post('/api/categories')
-      .set('Authorization', `Bearer ${adminToken}`)
-      .send({ slug: 'Invalid Slug!', name: 'Test' });
-    expect(res.status).toBe(400);
+  suite('Update', () => {
+    test('Valid - moderator updates', async () => {
+      const { created } = await createCategory(httpClient, admin.token, createdIds);
+
+      const response = await httpClient.put({
+        path: `${PATH}/${created.id}`,
+        token: moderator.token,
+        expectedStatusCode: 200,
+        options: {
+          body: JSON.stringify({ name: 'E2E Test Category Updated' }),
+          headers: { 'content-type': 'application/json' },
+        },
+      });
+      const body = (await response!.json()) as { name: string };
+
+      assert.strictEqual(body.name, 'E2E Test Category Updated');
+    });
   });
 
-  it('POST /api/categories with admin → 201', async () => {
-    const res = await request(BASE_URL)
-      .post('/api/categories')
-      .set('Authorization', `Bearer ${adminToken}`)
-      .send({ slug: 'e2e-test-category', name: 'E2E Test Category', isActive: true });
+  suite('Delete', () => {
+    test('Invalid - moderator cannot delete', async () => {
+      const { created } = await createCategory(httpClient, admin.token, createdIds);
 
-    expect(res.status).toBe(201);
-    expect(res.body).toMatchObject({ slug: 'e2e-test-category', name: 'E2E Test Category' });
-    createdId = res.body.id as string;
-  });
-
-  it('GET /api/categories/:id → 200', async () => {
-    const res = await request(BASE_URL).get(`/api/categories/${createdId}`);
-    expect(res.status).toBe(200);
-    expect(res.body).toMatchObject({ id: createdId });
-  });
-
-  it('GET /api/categories/:id with unknown id → 404', async () => {
-    const res = await request(BASE_URL).get('/api/categories/00000000-0000-0000-0000-000000000000');
-    expect(res.status).toBe(404);
-  });
-
-  it('PUT /api/categories/:id with moderator → 200', async () => {
-    const res = await request(BASE_URL)
-      .put(`/api/categories/${createdId}`)
-      .set('Authorization', `Bearer ${moderatorToken}`)
-      .send({ name: 'E2E Test Category Updated' });
-
-    expect(res.status).toBe(200);
-    expect(res.body).toMatchObject({ name: 'E2E Test Category Updated' });
-  });
-
-  it('DELETE /api/categories/:id with moderator → 403', async () => {
-    const res = await request(BASE_URL)
-      .delete(`/api/categories/${createdId}`)
-      .set('Authorization', `Bearer ${moderatorToken}`);
-    expect(res.status).toBe(403);
+      await httpClient.delete({
+        path: `${PATH}/${created.id}`,
+        token: moderator.token,
+        expectedStatusCode: 403,
+        dropBody: true,
+      });
+    });
   });
 });

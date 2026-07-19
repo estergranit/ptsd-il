@@ -3,28 +3,27 @@ import { UserRoles } from '../users/user.entity.ts';
 import { AudiencesService } from './audiences.service.ts';
 import { Public, AllowedRoles } from '../../utilities/decorators.ts';
 import { ZodValidationPipe } from '../../pipes/zod-validation.pipe.ts';
-import { CreateAudienceSchema, UpdateAudienceSchema } from './dto/audience.dto.ts';
-import type { CreateAudienceDto, UpdateAudienceDto } from './dto/audience.dto.ts';
+import { CreateAudienceSchema, UpdateAudienceSchema, type CreateAudienceDto, type UpdateAudienceDto } from './dto/audience.dto.ts';
 
 @Controller('audiences')
 export class AudiencesController {
-  constructor(private readonly audiencesService: AudiencesService) {}
+  public constructor(private readonly audiencesService: AudiencesService) {}
 
   @Get()
   @Public()
-  findAll() {
+  public findAll() {
     return this.audiencesService.findAll();
   }
 
   @Post()
   @AllowedRoles([UserRoles.ADMIN, UserRoles.MODERATOR])
-  create(@Body(new ZodValidationPipe(CreateAudienceSchema)) body: CreateAudienceDto) {
+  public create(@Body(new ZodValidationPipe(CreateAudienceSchema)) body: CreateAudienceDto) {
     return this.audiencesService.save(body);
   }
 
   @Put(':id')
   @AllowedRoles([UserRoles.ADMIN, UserRoles.MODERATOR])
-  update(
+  public update(
     @Param('id') id: string,
     @Body(new ZodValidationPipe(UpdateAudienceSchema)) body: UpdateAudienceDto,
   ) {
@@ -33,7 +32,7 @@ export class AudiencesController {
 
   @Delete(':id')
   @AllowedRoles([UserRoles.ADMIN])
-  remove(@Param('id') id: string) {
+  public remove(@Param('id') id: string) {
     return this.audiencesService.remove(id);
   }
 }

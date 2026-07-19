@@ -12,12 +12,12 @@ import type { JwtPayload } from '../strategies/jwt.strategy.ts';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
-  constructor(
+  public constructor(
     private readonly jwtService: JwtService,
     private readonly reflector: Reflector,
   ) {}
 
-  async canActivate(context: ExecutionContext): Promise<boolean> {
+  public async canActivate(context: ExecutionContext): Promise<boolean> {
     const isPublic = this.#isRoutePublic(context);
 
     if (isPublic) {
@@ -26,7 +26,9 @@ export class AuthGuard implements CanActivate {
 
     const request = context.switchToHttp().getRequest<Request>();
     const token = this.#extractTokenFromHeader(request);
-    if (!token) throw new UnauthorizedException();
+    if (!token) {
+      throw new UnauthorizedException();
+    }
 
     try {
       // TODO: change this according to the implement jwt strategy

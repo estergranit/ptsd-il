@@ -3,17 +3,17 @@ import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
 @Entity('age_groups')
 export class AgeGroup {
   @PrimaryGeneratedColumn('uuid')
-  id: string;
+  public id: string;
 
   @Column()
-  name: string;
+  public name: string;
 
   @Column({ type: 'text', nullable: true })
-  description: string | null;
+  public description: string | null;
 
   @Column({ type: 'int' })
-  min: number;
+  public min: number;
 
   @Column({ type: 'int' })
-  max: number;
+  public max: number;
 }

@@ -3,34 +3,33 @@ import { UserRoles } from '../users/user.entity.ts';
 import { CommunitiesService } from './communities.service.ts';
 import { AllowedRoles, Public } from '../../utilities/decorators.ts';
 import { ZodValidationPipe } from '../../pipes/zod-validation.pipe.ts';
-import type { CreateCommunityDto, UpdateCommunityDto } from './dto/community.dto.ts';
-import { CreateCommunitySchema, UpdateCommunitySchema } from './dto/community.dto.ts';
+import { CreateCommunitySchema, UpdateCommunitySchema, type CreateCommunityDto, type UpdateCommunityDto } from './dto/community.dto.ts';
 
 @Controller('communities')
 export class CommunitiesController {
-  constructor(private readonly communitiesService: CommunitiesService) {}
+  public constructor(private readonly communitiesService: CommunitiesService) {}
 
   @Get()
   @Public()
-  findAll() {
+  public findAll() {
     return this.communitiesService.findAll();
   }
 
   @Get(':id')
   @Public()
-  findOne(@Param('id') id: string) {
+  public findOne(@Param('id') id: string) {
     return this.communitiesService.findOne(id);
   }
 
   @Post()
   @AllowedRoles([UserRoles.ADMIN, UserRoles.MODERATOR])
-  create(@Body(new ZodValidationPipe(CreateCommunitySchema)) body: CreateCommunityDto) {
+  public create(@Body(new ZodValidationPipe(CreateCommunitySchema)) body: CreateCommunityDto) {
     return this.communitiesService.save(body);
   }
 
   @Put(':id')
   @AllowedRoles([UserRoles.ADMIN, UserRoles.MODERATOR])
-  update(
+  public update(
     @Param('id') id: string,
     @Body(new ZodValidationPipe(UpdateCommunitySchema)) body: UpdateCommunityDto,
   ) {
@@ -39,7 +38,7 @@ export class CommunitiesController {
 
   @Delete(':id')
   @AllowedRoles([UserRoles.ADMIN])
-  remove(@Param('id') id: string) {
+  public remove(@Param('id') id: string) {
     return this.communitiesService.remove(id);
   }
 }

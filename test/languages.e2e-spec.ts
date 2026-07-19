@@ -1,84 +1,165 @@
-import request from 'supertest';
-import { BASE_URL, getAdminToken, getModeratorToken } from './helpers/auth';
+/* eslint-disable @typescript-eslint/no-floating-promises */
 
-describe('Languages (e2e)', () => {
-  let adminToken: string;
-  let moderatorToken: string;
-  let createdId: string;
+import assert from 'node:assert/strict';
+import { after, suite, test } from 'node:test';
 
-  beforeAll(async () => {
-    [adminToken, moderatorToken] = await Promise.all([getAdminToken(), getModeratorToken()]);
+import { USERS } from './utilities/configuration.ts';
+import { randomString, validateUnauthenticated } from './utilities/functions.ts';
+import { HttpClient } from './utilities/http-client.ts';
+
+/******************************************************************************************************/
+
+const PATH = '/languages';
+
+async function createLanguage(httpClient: HttpClient, token: string, createdIds: string[]) {
+  // 5 hex chars (~1M space, within z.string().min(2).max(5)) to avoid colliding with
+  // seeded ISO codes — repo.save() upserts on the PK, so a collision would overwrite a
+  // seeded language and the `after` cleanup would then delete it.
+  const id = randomString(5);
+  const body = { id, name: 'Test Language', direction: 'ltr', isActive: true };
+
+  const response = await httpClient.post({
+    path: PATH,
+    token,
+    expectedStatusCode: 201,
+    options: { body: JSON.stringify(body), headers: { 'content-type': 'application/json' } },
   });
 
-  afterAll(async () => {
-    if (createdId) {
-      await request(BASE_URL)
-        .delete(`/api/languages/${createdId}`)
-        .set('Authorization', `Bearer ${adminToken}`);
-    }
+  const created = (await response!.json()) as { id: string; name: string };
+  createdIds.push(created.id);
+
+  return { body, created };
+}
+
+/******************************************************************************************************/
+
+suite('Languages integration tests', () => {
+  const { admin, moderator } = USERS;
+  const httpClient = new HttpClient();
+  const createdIds: string[] = [];
+
+  after(async () => {
+    await Promise.all(
+      createdIds.map((id) => {
+        return httpClient.delete({
+          path: `${PATH}/${id}`,
+          token: admin.token,
+          expectedStatusCode: 200,
+          dropBody: true,
+        });
+      }),
+    );
   });
 
-  it('GET /api/languages → 200 with array', async () => {
-    const res = await request(BASE_URL).get('/api/languages');
-    expect(res.status).toBe(200);
-    expect(Array.isArray(res.body)).toBe(true);
+  suite('Read', () => {
+    test('Valid - list returns array', async () => {
+      const response = await httpClient.get({ path: PATH, token: 'none', expectedStatusCode: 200 });
+
+      assert.ok(Array.isArray(await response!.json()));
+    });
   });
 
-  it('POST /api/languages without auth → 401', async () => {
-    const res = await request(BASE_URL)
-      .post('/api/languages')
-      .send({ id: 'xx', name: 'Test' });
-    expect(res.status).toBe(401);
+  suite('Create', () => {
+    test('Valid - admin creates', async () => {
+      const { body, created } = await createLanguage(httpClient, admin.token, createdIds);
+
+      assert.strictEqual(created.id, body.id);
+      assert.strictEqual(created.name, body.name);
+    });
+
+    test('Invalid - missing authorization token', async () => {
+      await httpClient.post({
+        path: PATH,
+        token: 'none',
+        expectedStatusCode: 401,
+        options: {
+          body: JSON.stringify({ id: 'xx', name: 'Test' }),
+          headers: { 'content-type': 'application/json' },
+        },
+        dropBody: true,
+      });
+    });
+
+    test('Invalid - unauthenticated', async () => {
+      await validateUnauthenticated({
+        httpClient,
+        path: PATH,
+        method: 'post',
+        body: { id: 'xx', name: 'Test' },
+      });
+    });
+
+    test('Invalid - moderator cannot create (admin only)', async () => {
+      await httpClient.post({
+        path: PATH,
+        token: moderator.token,
+        expectedStatusCode: 403,
+        options: {
+          body: JSON.stringify({ id: 'xx', name: 'Test' }),
+          headers: { 'content-type': 'application/json' },
+        },
+        dropBody: true,
+      });
+    });
+
+    test('Invalid - bad body', async () => {
+      await httpClient.post({
+        path: PATH,
+        token: admin.token,
+        expectedStatusCode: 400,
+        options: {
+          body: JSON.stringify({ id: 'toolongid', name: '' }),
+          headers: { 'content-type': 'application/json' },
+        },
+        dropBody: true,
+      });
+    });
   });
 
-  it('POST /api/languages with moderator → 403', async () => {
-    const res = await request(BASE_URL)
-      .post('/api/languages')
-      .set('Authorization', `Bearer ${moderatorToken}`)
-      .send({ id: 'xx', name: 'Test' });
-    expect(res.status).toBe(403);
+  suite('Update', () => {
+    test('Valid - admin updates', async () => {
+      const { created } = await createLanguage(httpClient, admin.token, createdIds);
+
+      const response = await httpClient.put({
+        path: `${PATH}/${created.id}`,
+        token: admin.token,
+        expectedStatusCode: 200,
+        options: {
+          body: JSON.stringify({ name: 'Test Language Updated' }),
+          headers: { 'content-type': 'application/json' },
+        },
+      });
+      const body = (await response!.json()) as { name: string };
+
+      assert.strictEqual(body.name, 'Test Language Updated');
+    });
+
+    test('Invalid - update without auth', async () => {
+      const { created } = await createLanguage(httpClient, admin.token, createdIds);
+
+      await httpClient.put({
+        path: `${PATH}/${created.id}`,
+        token: 'none',
+        expectedStatusCode: 401,
+        options: {
+          body: JSON.stringify({ name: 'Should fail' }),
+          headers: { 'content-type': 'application/json' },
+        },
+        dropBody: true,
+      });
+    });
   });
 
-  it('POST /api/languages with invalid body → 400', async () => {
-    const res = await request(BASE_URL)
-      .post('/api/languages')
-      .set('Authorization', `Bearer ${adminToken}`)
-      .send({ id: 'toolongid', name: '' });
-    expect(res.status).toBe(400);
-  });
+  suite('Delete', () => {
+    test('Invalid - moderator cannot delete', async () => {
+      const { created } = await createLanguage(httpClient, admin.token, createdIds);
 
-  it('POST /api/languages with admin → 201', async () => {
-    const res = await request(BASE_URL)
-      .post('/api/languages')
-      .set('Authorization', `Bearer ${adminToken}`)
-      .send({ id: 'xx', name: 'Test Language', direction: 'ltr', isActive: true });
-
-    expect(res.status).toBe(201);
-    expect(res.body).toMatchObject({ id: 'xx', name: 'Test Language' });
-    createdId = res.body.id as string;
-  });
-
-  it('PUT /api/languages/:id with admin → 200', async () => {
-    const res = await request(BASE_URL)
-      .put(`/api/languages/${createdId}`)
-      .set('Authorization', `Bearer ${adminToken}`)
-      .send({ name: 'Test Language Updated' });
-
-    expect(res.status).toBe(200);
-    expect(res.body).toMatchObject({ name: 'Test Language Updated' });
-  });
-
-  it('PUT /api/languages/:id without auth → 401', async () => {
-    const res = await request(BASE_URL)
-      .put(`/api/languages/${createdId}`)
-      .send({ name: 'Should fail' });
-    expect(res.status).toBe(401);
-  });
-
-  it('DELETE /api/languages/:id with moderator → 403', async () => {
-    const res = await request(BASE_URL)
-      .delete(`/api/languages/${createdId}`)
-      .set('Authorization', `Bearer ${moderatorToken}`);
-    expect(res.status).toBe(403);
+      await httpClient.delete({
+        path: `${PATH}/${created.id}`,
+        token: moderator.token,
+        expectedStatusCode: 403,
+        dropBody: true,
+      });
+    });
   });
 });

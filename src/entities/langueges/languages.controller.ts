@@ -11,22 +11,21 @@ import { UserRoles } from '../users/user.entity.ts';
 import { LanguagesService } from './languages.service.ts';
 import { AllowedRoles, Public } from '../../utilities/decorators.ts';
 import { ZodValidationPipe } from '../../pipes/zod-validation.pipe.ts';
-import type { CreateLanguageDto, UpdateLanguageDto } from './dto/language.dto.ts';
-import { CreateLanguageSchema, UpdateLanguageSchema } from './dto/language.dto.ts';
+import { CreateLanguageSchema, UpdateLanguageSchema, type CreateLanguageDto, type UpdateLanguageDto } from './dto/language.dto.ts';
 
 @Controller('languages')
 export class LanguagesController {
-  constructor(private readonly languagesService: LanguagesService) {}
+  public constructor(private readonly languagesService: LanguagesService) {}
 
   @Get()
   @Public()
-  findAll() {
+  public findAll() {
     return this.languagesService.findAll();
   }
 
   @Post()
   @AllowedRoles([UserRoles.ADMIN])
-  create(
+  public create(
     @Body(new ZodValidationPipe(CreateLanguageSchema)) body: CreateLanguageDto,
   ) {
     return this.languagesService.save(body);
@@ -34,7 +33,7 @@ export class LanguagesController {
 
   @Put(':id')
   @AllowedRoles([UserRoles.ADMIN])
-  update(
+  public update(
     @Param('id') id: string,
     @Body(new ZodValidationPipe(UpdateLanguageSchema)) body: UpdateLanguageDto,
   ) {
@@ -43,7 +42,7 @@ export class LanguagesController {
 
   @Delete(':id')
   @AllowedRoles([UserRoles.ADMIN])
-  remove(@Param('id') id: string) {
+  public remove(@Param('id') id: string) {
     return this.languagesService.remove(id);
   }
 }

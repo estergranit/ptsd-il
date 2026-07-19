@@ -1,5 +1,5 @@
 import { SetMetadata } from '@nestjs/common';
-import { UserRoles } from '../entities/users/user.entity.ts';
+import type { UserRoles } from '../entities/users/user.entity.ts';
 
 type DecoratorKey = 'isPublic' | 'allowedRoles';
 

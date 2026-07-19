@@ -12,36 +12,36 @@ import { Audience } from '../audiences/audiences.entity.ts';
 @Entity('communities')
 export class Community {
   @PrimaryGeneratedColumn('uuid')
-  id: string;
+  public id: string;
 
   @Column()
-  name: string;
+  public name: string;
 
   @Column({ type: 'text', nullable: true })
-  description: string | null;
+  public description: string | null;
 
   @Column({ nullable: true })
-  location: string | null;
+  public location: string | null;
 
   @Column({ nullable: true })
-  meetingType: string | null;
+  public meetingType: string | null;
 
   @Column({ nullable: true })
-  organization: string | null;
+  public organization: string | null;
 
   @Column({ nullable: true })
-  contactUrl: string | null;
+  public contactUrl: string | null;
 
-  @ManyToMany(() => Audience)
+  @ManyToMany(() => { return Audience })
   @JoinTable({ name: 'community_audiences' })
-  targetAudiences: Audience[];
+  public targetAudiences: Audience[];
 
   @Column({ default: true })
-  isActive: boolean;
+  public isActive: boolean;
 
   @CreateDateColumn()
-  createdAt: Date;
+  public createdAt: Date;
 
   @UpdateDateColumn()
-  updatedAt: Date;
+  public updatedAt: Date;
 }

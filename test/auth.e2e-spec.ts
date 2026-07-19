@@ -1,38 +1,67 @@
-import request from 'supertest';
-import { BASE_URL, ADMIN_EMAIL, ADMIN_PASSWORD } from './helpers/auth';
+/* eslint-disable @typescript-eslint/no-floating-promises */
 
-describe('Auth (e2e)', () => {
-  it('POST /api/auth/login with valid credentials → 201 with accessToken', async () => {
-    const res = await request(BASE_URL)
-      .post('/api/auth/login')
-      .send({ email: ADMIN_EMAIL, password: ADMIN_PASSWORD });
+import assert from 'node:assert/strict';
+import { suite, test } from 'node:test';
 
-    expect(res.status).toBe(201);
-    expect(res.body).toHaveProperty('accessToken');
-    expect(typeof res.body.accessToken).toBe('string');
+import { HttpClient } from './utilities/http-client.ts';
+
+/******************************************************************************************************/
+
+const PATH = '/auth/login';
+
+// Mirrors configuration.ts defaults; auth needs the raw password, which configuration
+// intentionally does not export (it only exposes resolved tokens).
+const ADMIN_EMAIL = process.env.TEST_ADMIN_EMAIL ?? 'admin@ptsd-il.local';
+const ADMIN_PASSWORD = process.env.TEST_ADMIN_PASSWORD ?? 'Admin@local123!';
+
+function loginBody(body: unknown) {
+  return { body: JSON.stringify(body), headers: { 'content-type': 'application/json' } };
+}
+
+/******************************************************************************************************/
+
+suite('Auth integration tests', () => {
+  const httpClient = new HttpClient();
+
+  test('Valid - login returns accessToken', async () => {
+    const response = await httpClient.post({
+      path: PATH,
+      token: 'none',
+      expectedStatusCode: 201,
+      options: loginBody({ email: ADMIN_EMAIL, password: ADMIN_PASSWORD }),
+    });
+    const body = (await response!.json()) as { accessToken?: unknown };
+
+    assert.strictEqual(typeof body.accessToken, 'string');
   });
 
-  it('POST /api/auth/login with wrong password → 401', async () => {
-    const res = await request(BASE_URL)
-      .post('/api/auth/login')
-      .send({ email: ADMIN_EMAIL, password: 'wrong-password' });
-
-    expect(res.status).toBe(401);
+  test('Invalid - wrong password', async () => {
+    await httpClient.post({
+      path: PATH,
+      token: 'none',
+      expectedStatusCode: 401,
+      options: loginBody({ email: ADMIN_EMAIL, password: 'wrong-password' }),
+      dropBody: true,
+    });
   });
 
-  it('POST /api/auth/login with unknown email → 401', async () => {
-    const res = await request(BASE_URL)
-      .post('/api/auth/login')
-      .send({ email: 'nobody@ptsd-il.local', password: 'any' });
-
-    expect(res.status).toBe(401);
+  test('Invalid - unknown email', async () => {
+    await httpClient.post({
+      path: PATH,
+      token: 'none',
+      expectedStatusCode: 401,
+      options: loginBody({ email: 'nobody@ptsd-il.local', password: 'any' }),
+      dropBody: true,
+    });
   });
 
-  it('POST /api/auth/login with invalid body → 400', async () => {
-    const res = await request(BASE_URL)
-      .post('/api/auth/login')
-      .send({ email: 'not-an-email', password: '' });
-
-    expect(res.status).toBe(400);
+  test('Invalid - bad body', async () => {
+    await httpClient.post({
+      path: PATH,
+      token: 'none',
+      expectedStatusCode: 400,
+      options: loginBody({ email: 'not-an-email', password: '' }),
+      dropBody: true,
+    });
   });
 });

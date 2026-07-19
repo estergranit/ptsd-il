@@ -3,28 +3,27 @@ import { ZodValidationPipe } from '../../pipes/zod-validation.pipe.ts';
 import { AllowedRoles, Public } from '../../utilities/decorators.ts';
 import { UserRoles } from '../users/user.entity.ts';
 import { AgeGroupsService } from './age-groups.service.ts';
-import { CreateAgeGroupSchema, UpdateAgeGroupSchema } from './dto/age-group.dto.ts';
-import type { CreateAgeGroupDto, UpdateAgeGroupDto } from './dto/age-group.dto.ts';
+import { CreateAgeGroupSchema, UpdateAgeGroupSchema, type CreateAgeGroupDto, type UpdateAgeGroupDto } from './dto/age-group.dto.ts';
 
 @Controller('age-groups')
 export class AgeGroupsController {
-  constructor(private readonly ageGroupsService: AgeGroupsService) {}
+  public constructor(private readonly ageGroupsService: AgeGroupsService) {}
 
   @Get()
   @Public()
-  findAll() {
+  public findAll() {
     return this.ageGroupsService.findAll();
   }
 
   @Post()
   @AllowedRoles([UserRoles.ADMIN, UserRoles.MODERATOR])
-  create(@Body(new ZodValidationPipe(CreateAgeGroupSchema)) body: CreateAgeGroupDto) {
+  public create(@Body(new ZodValidationPipe(CreateAgeGroupSchema)) body: CreateAgeGroupDto) {
     return this.ageGroupsService.save(body);
   }
 
   @Put(':id')
   @AllowedRoles([UserRoles.ADMIN, UserRoles.MODERATOR])
-  update(
+  public update(
     @Param('id') id: string,
     @Body(new ZodValidationPipe(UpdateAgeGroupSchema)) body: UpdateAgeGroupDto,
   ) {
@@ -33,7 +32,7 @@ export class AgeGroupsController {
 
   @Delete(':id')
   @AllowedRoles([UserRoles.ADMIN])
-  remove(@Param('id') id: string) {
+  public remove(@Param('id') id: string) {
     return this.ageGroupsService.remove(id);
   }
 }

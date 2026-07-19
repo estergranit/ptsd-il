@@ -19,36 +19,36 @@ import { UpdateArticleSchema, type UpdateArticleDto } from './dto/update-article
 
 @Controller('articles')
 export class ArticlesController {
-  constructor(private readonly articlesService: ArticlesService) {}
+  public constructor(private readonly articlesService: ArticlesService) {}
 
   @Get()
   @Public()
-  findPublished(@Query(new ZodValidationPipe(QueryArticleSchema)) query: QueryArticleDto) {
+  public findPublished(@Query(new ZodValidationPipe(QueryArticleSchema)) query: QueryArticleDto) {
     return this.articlesService.findPublished(query);
   }
 
   @Get('admin')
   @AllowedRoles([UserRoles.ADMIN, UserRoles.MODERATOR])
-  findAll(@Query(new ZodValidationPipe(QueryArticleSchema)) query: QueryArticleDto) {
+  public findAll(@Query(new ZodValidationPipe(QueryArticleSchema)) query: QueryArticleDto) {
     return this.articlesService.findAll(query);
   }
 
   @Get(':id')
   @AllowedRoles([UserRoles.ADMIN, UserRoles.MODERATOR])
-  findOne(@Param('id') id: string) {
+  public findOne(@Param('id') id: string) {
     return this.articlesService.findOne(id);
   }
 
   @Post()
   @AllowedRoles([UserRoles.ADMIN, UserRoles.MODERATOR])
   @UsePipes(new ZodValidationPipe(CreateArticleSchema))
-  create(@Body() dto: CreateArticleDto) {
+  public create(@Body() dto: CreateArticleDto) {
     return this.articlesService.create(dto);
   }
 
   @Patch(':id')
   @AllowedRoles([UserRoles.ADMIN, UserRoles.MODERATOR])
-  update(
+  public update(
     @Param('id') id: string,
     @Body(new ZodValidationPipe(UpdateArticleSchema)) dto: UpdateArticleDto,
   ) {
@@ -57,7 +57,7 @@ export class ArticlesController {
 
   @Delete(':id')
   @AllowedRoles([UserRoles.ADMIN])
-  remove(@Param('id') id: string) {
+  public remove(@Param('id') id: string) {
     return this.articlesService.remove(id);
   }
 }

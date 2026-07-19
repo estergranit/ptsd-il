@@ -10,30 +10,30 @@ import {
 @Entity('categories')
 export class Category {
   @PrimaryGeneratedColumn('uuid')
-  id: string;
+  public id: string;
 
   @Column({ unique: true })
-  slug: string;
+  public slug: string;
 
   @Column({ nullable: true })
-  parentId: string | null;
+  public parentId: string | null;
 
-  @ManyToOne(() => Category, (cat) => cat.children, {
+  @ManyToOne(() => { return Category }, (cat) => { return cat.children }, {
     nullable: true,
     onDelete: 'SET NULL',
   })
   @JoinColumn({ name: 'parentId' })
-  parent: Category | null;
+  public parent: Category | null;
 
-  @OneToMany(() => Category, (cat) => cat.parent)
-  children: Category[];
+  @OneToMany(() => { return Category }, (cat) => { return cat.parent })
+  public children: Category[];
 
   @Column()
-  name: string;
+  public name: string;
 
   @Column({ default: 0 })
-  sortOrder: number;
+  public sortOrder: number;
 
   @Column({ default: true })
-  isActive: boolean;
+  public isActive: boolean;
 }

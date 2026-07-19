@@ -15,29 +15,29 @@ export enum UserRoles {
 @Entity('users')
 export class User {
   @PrimaryGeneratedColumn('uuid')
-  id: string;
+  public id: string;
 
   @Column()
-  firstName: string;
+  public firstName: string;
 
   @Column()
-  lastName: string;
+  public lastName: string;
 
   @Column({ unique: true, nullable: true })
-  email: string | null;
+  public email: string | null;
 
   @Column({ nullable: true })
-  phone: string | null;
+  public phone: string | null;
 
   @Column()
-  password: string;
+  public password: string;
 
   @Column('text', { array: true, default: [] })
-  roles: UserRoles[];
+  public roles: UserRoles[];
 
   @CreateDateColumn()
-  createdAt: Date;
+  public createdAt: Date;
 
   @UpdateDateColumn()
-  updatedAt: Date;
+  public updatedAt: Date;
 }

@@ -12,23 +12,25 @@ import { JwtStrategy } from './strategies/jwt.strategy.ts';
 
 @Module({
   imports: [
-    PassportModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (config: ConfigService) => ({
-        secret: config.getOrThrow<string>('jwt.secret'),
-        signOptions: { expiresIn: config.getOrThrow<string>('jwt.expiresIn') as any },
-      }),
+      useFactory: (config: ConfigService) => {
+        return {
+          secret: config.getOrThrow<string>('jwt.secret'),
+          signOptions: { expiresIn: config.getOrThrow('jwt.expiresIn') },
+        }
+      },
     }),
+    PassportModule,
     UsersModule,
   ],
   controllers: [AuthController],
   providers: [
-    AuthService,
-    JwtStrategy,
     { provide: APP_GUARD, useClass: AuthGuard },
     { provide: APP_GUARD, useClass: RolesGuard },
+    AuthService,
+    JwtStrategy,
   ],
   exports: [JwtModule],
 })

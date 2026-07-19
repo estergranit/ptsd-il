@@ -3,14 +3,14 @@ import { Column, Entity, PrimaryColumn } from 'typeorm';
 @Entity('languages')
 export class Language {
   @PrimaryColumn()
-  id: string; // ISO code: he, ar, ru, en, fr
+  public id: string; // ISO code: he, ar, ru, en, fr
 
   @Column()
-  name: string;
+  public name: string;
 
   @Column({ default: 'ltr' })
-  direction: string;
+  public direction: string;
 
   @Column({ default: true })
-  isActive: boolean;
+  public isActive: boolean;
 }

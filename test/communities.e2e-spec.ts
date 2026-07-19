@@ -1,84 +1,172 @@
-import request from 'supertest';
-import { BASE_URL, getAdminToken, getModeratorToken } from './helpers/auth';
+/* eslint-disable @typescript-eslint/no-floating-promises */
 
-describe('Communities (e2e)', () => {
-  let adminToken: string;
-  let moderatorToken: string;
-  let createdId: string;
+import assert from 'node:assert/strict';
+import { after, suite, test } from 'node:test';
 
-  beforeAll(async () => {
-    [adminToken, moderatorToken] = await Promise.all([getAdminToken(), getModeratorToken()]);
+import { USERS } from './utilities/configuration.ts';
+import { randomString, validateUnauthenticated } from './utilities/functions.ts';
+import { HttpClient } from './utilities/http-client.ts';
+
+/******************************************************************************************************/
+
+const PATH = '/communities';
+const UNKNOWN_ID = '00000000-0000-0000-0000-000000000000';
+
+type CommunityOverrides = Record<string, unknown>;
+
+function generateCommunity(overrides: CommunityOverrides = {}) {
+  return {
+    name: `E2E ${randomString(8)}`,
+    description: 'Created in e2e test',
+    isActive: true,
+    ...overrides,
+  };
+}
+
+async function createCommunity(
+  httpClient: HttpClient,
+  token: string,
+  createdIds: string[],
+  overrides: CommunityOverrides = {},
+) {
+  const body = generateCommunity(overrides);
+
+  const response = await httpClient.post({
+    path: PATH,
+    token,
+    expectedStatusCode: 201,
+    options: { body: JSON.stringify(body), headers: { 'content-type': 'application/json' } },
   });
 
-  afterAll(async () => {
-    if (createdId) {
-      await request(BASE_URL)
-        .delete(`/api/communities/${createdId}`)
-        .set('Authorization', `Bearer ${adminToken}`);
-    }
+  const created = (await response!.json()) as { id: string; name: string };
+  createdIds.push(created.id);
+
+  return { body, created };
+}
+
+/******************************************************************************************************/
+
+suite('Communities integration tests', () => {
+  const { admin, moderator } = USERS;
+  const httpClient = new HttpClient();
+  const createdIds: string[] = [];
+
+  after(async () => {
+    await Promise.all(
+      createdIds.map((id) => {
+        return httpClient.delete({
+          path: `${PATH}/${id}`,
+          token: admin.token,
+          expectedStatusCode: 200,
+          dropBody: true,
+        });
+      }),
+    );
   });
 
-  it('GET /api/communities → 200 with array', async () => {
-    const res = await request(BASE_URL).get('/api/communities');
-    expect(res.status).toBe(200);
-    expect(Array.isArray(res.body)).toBe(true);
-  });
+  suite('Read', () => {
+    test('Valid - list returns array', async () => {
+      const response = await httpClient.get({ path: PATH, token: 'none', expectedStatusCode: 200 });
+      const body = (await response!.json()) as unknown;
 
-  it('POST /api/communities without auth → 401', async () => {
-    const res = await request(BASE_URL)
-      .post('/api/communities')
-      .send({ name: 'Test Community' });
-    expect(res.status).toBe(401);
-  });
+      assert.ok(Array.isArray(body));
+    });
 
-  it('POST /api/communities with invalid contactUrl → 400', async () => {
-    const res = await request(BASE_URL)
-      .post('/api/communities')
-      .set('Authorization', `Bearer ${adminToken}`)
-      .send({ name: 'Test', contactUrl: 'not-a-url' });
-    expect(res.status).toBe(400);
-  });
+    test('Valid - detail by id', async () => {
+      const { created } = await createCommunity(httpClient, moderator.token, createdIds);
 
-  it('POST /api/communities with moderator → 201', async () => {
-    const res = await request(BASE_URL)
-      .post('/api/communities')
-      .set('Authorization', `Bearer ${moderatorToken}`)
-      .send({
-        name: 'E2E Test Community',
-        description: 'Created in e2e test',
-        isActive: true,
+      const response = await httpClient.get({
+        path: `${PATH}/${created.id}`,
+        token: 'none',
+        expectedStatusCode: 200,
       });
+      const body = (await response!.json()) as { id: string };
 
-    expect(res.status).toBe(201);
-    expect(res.body).toMatchObject({ name: 'E2E Test Community' });
-    createdId = res.body.id as string;
+      assert.strictEqual(body.id, created.id);
+    });
+
+    test('Invalid - unknown id returns 404', async () => {
+      await httpClient.get({
+        path: `${PATH}/${UNKNOWN_ID}`,
+        token: 'none',
+        expectedStatusCode: 404,
+        dropBody: true,
+      });
+    });
   });
 
-  it('GET /api/communities/:id → 200', async () => {
-    const res = await request(BASE_URL).get(`/api/communities/${createdId}`);
-    expect(res.status).toBe(200);
-    expect(res.body).toMatchObject({ id: createdId });
+  suite('Create', () => {
+    test('Valid - moderator creates', async () => {
+      const { body, created } = await createCommunity(httpClient, moderator.token, createdIds);
+
+      assert.strictEqual(created.name, body.name);
+    });
+
+    test('Invalid - missing authorization token', async () => {
+      await httpClient.post({
+        path: PATH,
+        token: 'none',
+        expectedStatusCode: 401,
+        options: {
+          body: JSON.stringify({ name: 'Test Community' }),
+          headers: { 'content-type': 'application/json' },
+        },
+        dropBody: true,
+      });
+    });
+
+    test('Invalid - unauthenticated', async () => {
+      await validateUnauthenticated({
+        httpClient,
+        path: PATH,
+        method: 'post',
+        body: { name: 'Test Community' },
+      });
+    });
+
+    test('Invalid - bad contactUrl', async () => {
+      await httpClient.post({
+        path: PATH,
+        token: admin.token,
+        expectedStatusCode: 400,
+        options: {
+          body: JSON.stringify({ name: 'Test', contactUrl: 'not-a-url' }),
+          headers: { 'content-type': 'application/json' },
+        },
+        dropBody: true,
+      });
+    });
   });
 
-  it('GET /api/communities/:id with unknown id → 404', async () => {
-    const res = await request(BASE_URL).get('/api/communities/00000000-0000-0000-0000-000000000000');
-    expect(res.status).toBe(404);
+  suite('Update', () => {
+    test('Valid - moderator updates', async () => {
+      const { created } = await createCommunity(httpClient, moderator.token, createdIds);
+
+      const response = await httpClient.put({
+        path: `${PATH}/${created.id}`,
+        token: moderator.token,
+        expectedStatusCode: 200,
+        options: {
+          body: JSON.stringify({ name: 'E2E Test Community Updated' }),
+          headers: { 'content-type': 'application/json' },
+        },
+      });
+      const body = (await response!.json()) as { name: string };
+
+      assert.strictEqual(body.name, 'E2E Test Community Updated');
+    });
   });
 
-  it('PUT /api/communities/:id with moderator → 200', async () => {
-    const res = await request(BASE_URL)
-      .put(`/api/communities/${createdId}`)
-      .set('Authorization', `Bearer ${moderatorToken}`)
-      .send({ name: 'E2E Test Community Updated' });
+  suite('Delete', () => {
+    test('Invalid - moderator cannot delete', async () => {
+      const { created } = await createCommunity(httpClient, moderator.token, createdIds);
 
-    expect(res.status).toBe(200);
-    expect(res.body).toMatchObject({ name: 'E2E Test Community Updated' });
-  });
-
-  it('DELETE /api/communities/:id with moderator → 403', async () => {
-    const res = await request(BASE_URL)
-      .delete(`/api/communities/${createdId}`)
-      .set('Authorization', `Bearer ${moderatorToken}`);
-    expect(res.status).toBe(403);
+      await httpClient.delete({
+        path: `${PATH}/${created.id}`,
+        token: moderator.token,
+        expectedStatusCode: 403,
+        dropBody: true,
+      });
+    });
   });
 });

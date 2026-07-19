@@ -5,26 +5,28 @@ import { Language } from './language.entity.ts';
 
 @Injectable()
 export class LanguagesService {
-  constructor(
+  public constructor(
     @InjectRepository(Language)
     private readonly languagesRepo: Repository<Language>,
   ) {}
 
-  findAll(): Promise<Language[]> {
+  public findAll(): Promise<Language[]> {
     return this.languagesRepo.find({ where: { isActive: true }, order: { id: 'ASC' } });
   }
 
-  async findOne(id: string): Promise<Language> {
+  public async findOne(id: string): Promise<Language> {
     const lang = await this.languagesRepo.findOne({ where: { id } });
-    if (!lang) throw new NotFoundException();
+    if (!lang){
+      throw new NotFoundException();
+    }
     return lang;
   }
 
-  save(lang: Partial<Language>): Promise<Language> {
+  public save(lang: Partial<Language>): Promise<Language> {
     return this.languagesRepo.save(lang);
   }
 
-  async remove(id: string): Promise<void> {
+  public async remove(id: string): Promise<void> {
     await this.languagesRepo.delete(id);
   }
 }
