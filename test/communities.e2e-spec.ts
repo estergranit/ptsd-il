@@ -10,6 +10,7 @@ import { HttpClient } from './utilities/http-client.ts';
 /******************************************************************************************************/
 
 const PATH = '/communities';
+const ADMIN_PATH = '/admin/communities';
 const UNKNOWN_ID = '00000000-0000-0000-0000-000000000000';
 
 type CommunityOverrides = Record<string, unknown>;
@@ -32,7 +33,7 @@ async function createCommunity(
   const body = generateCommunity(overrides);
 
   const response = await httpClient.post({
-    path: PATH,
+    path: ADMIN_PATH,
     token,
     expectedStatusCode: 201,
     options: { body: JSON.stringify(body), headers: { 'content-type': 'application/json' } },
@@ -55,7 +56,7 @@ suite('Communities integration tests', () => {
     await Promise.all(
       createdIds.map((id) => {
         return httpClient.delete({
-          path: `${PATH}/${id}`,
+          path: `${ADMIN_PATH}/${id}`,
           token: admin.token,
           expectedStatusCode: 200,
           dropBody: true,
@@ -104,7 +105,7 @@ suite('Communities integration tests', () => {
 
     test('Invalid - missing authorization token', async () => {
       await httpClient.post({
-        path: PATH,
+        path: ADMIN_PATH,
         token: 'none',
         expectedStatusCode: 401,
         options: {
@@ -118,7 +119,7 @@ suite('Communities integration tests', () => {
     test('Invalid - unauthenticated', async () => {
       await validateUnauthenticated({
         httpClient,
-        path: PATH,
+        path: ADMIN_PATH,
         method: 'post',
         body: { name: 'Test Community' },
       });
@@ -126,7 +127,7 @@ suite('Communities integration tests', () => {
 
     test('Invalid - bad contactUrl', async () => {
       await httpClient.post({
-        path: PATH,
+        path: ADMIN_PATH,
         token: admin.token,
         expectedStatusCode: 400,
         options: {
@@ -143,7 +144,7 @@ suite('Communities integration tests', () => {
       const { created } = await createCommunity(httpClient, moderator.token, createdIds);
 
       const response = await httpClient.put({
-        path: `${PATH}/${created.id}`,
+        path: `${ADMIN_PATH}/${created.id}`,
         token: moderator.token,
         expectedStatusCode: 200,
         options: {
@@ -162,7 +163,7 @@ suite('Communities integration tests', () => {
       const { created } = await createCommunity(httpClient, moderator.token, createdIds);
 
       await httpClient.delete({
-        path: `${PATH}/${created.id}`,
+        path: `${ADMIN_PATH}/${created.id}`,
         token: moderator.token,
         expectedStatusCode: 403,
         dropBody: true,

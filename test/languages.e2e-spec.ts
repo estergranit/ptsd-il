@@ -10,6 +10,7 @@ import { HttpClient } from './utilities/http-client.ts';
 /******************************************************************************************************/
 
 const PATH = '/languages';
+const ADMIN_PATH = '/admin/languages';
 
 async function createLanguage(httpClient: HttpClient, token: string, createdIds: string[]) {
   // 5 hex chars (~1M space, within z.string().min(2).max(5)) to avoid colliding with
@@ -19,7 +20,7 @@ async function createLanguage(httpClient: HttpClient, token: string, createdIds:
   const body = { id, name: 'Test Language', direction: 'ltr', isActive: true };
 
   const response = await httpClient.post({
-    path: PATH,
+    path: ADMIN_PATH,
     token,
     expectedStatusCode: 201,
     options: { body: JSON.stringify(body), headers: { 'content-type': 'application/json' } },
@@ -42,7 +43,7 @@ suite('Languages integration tests', () => {
     await Promise.all(
       createdIds.map((id) => {
         return httpClient.delete({
-          path: `${PATH}/${id}`,
+          path: `${ADMIN_PATH}/${id}`,
           token: admin.token,
           expectedStatusCode: 200,
           dropBody: true,
@@ -69,7 +70,7 @@ suite('Languages integration tests', () => {
 
     test('Invalid - missing authorization token', async () => {
       await httpClient.post({
-        path: PATH,
+        path: ADMIN_PATH,
         token: 'none',
         expectedStatusCode: 401,
         options: {
@@ -83,7 +84,7 @@ suite('Languages integration tests', () => {
     test('Invalid - unauthenticated', async () => {
       await validateUnauthenticated({
         httpClient,
-        path: PATH,
+        path: ADMIN_PATH,
         method: 'post',
         body: { id: 'xx', name: 'Test' },
       });
@@ -91,7 +92,7 @@ suite('Languages integration tests', () => {
 
     test('Invalid - moderator cannot create (admin only)', async () => {
       await httpClient.post({
-        path: PATH,
+        path: ADMIN_PATH,
         token: moderator.token,
         expectedStatusCode: 403,
         options: {
@@ -104,7 +105,7 @@ suite('Languages integration tests', () => {
 
     test('Invalid - bad body', async () => {
       await httpClient.post({
-        path: PATH,
+        path: ADMIN_PATH,
         token: admin.token,
         expectedStatusCode: 400,
         options: {
@@ -121,7 +122,7 @@ suite('Languages integration tests', () => {
       const { created } = await createLanguage(httpClient, admin.token, createdIds);
 
       const response = await httpClient.put({
-        path: `${PATH}/${created.id}`,
+        path: `${ADMIN_PATH}/${created.id}`,
         token: admin.token,
         expectedStatusCode: 200,
         options: {
@@ -138,7 +139,7 @@ suite('Languages integration tests', () => {
       const { created } = await createLanguage(httpClient, admin.token, createdIds);
 
       await httpClient.put({
-        path: `${PATH}/${created.id}`,
+        path: `${ADMIN_PATH}/${created.id}`,
         token: 'none',
         expectedStatusCode: 401,
         options: {
@@ -155,7 +156,7 @@ suite('Languages integration tests', () => {
       const { created } = await createLanguage(httpClient, admin.token, createdIds);
 
       await httpClient.delete({
-        path: `${PATH}/${created.id}`,
+        path: `${ADMIN_PATH}/${created.id}`,
         token: moderator.token,
         expectedStatusCode: 403,
         dropBody: true,

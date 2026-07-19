@@ -10,13 +10,14 @@ import { HttpClient } from './utilities/http-client.ts';
 /******************************************************************************************************/
 
 const PATH = '/categories';
+const ADMIN_PATH = '/admin/categories';
 const UNKNOWN_ID = '00000000-0000-0000-0000-000000000000';
 
 async function createCategory(httpClient: HttpClient, token: string, createdIds: string[]) {
   const body = { slug: `e2e-${randomString(8)}`, name: 'E2E Test Category', isActive: true };
 
   const response = await httpClient.post({
-    path: PATH,
+    path: ADMIN_PATH,
     token,
     expectedStatusCode: 201,
     options: { body: JSON.stringify(body), headers: { 'content-type': 'application/json' } },
@@ -39,7 +40,7 @@ suite('Categories integration tests', () => {
     await Promise.all(
       createdIds.map((id) => {
         return httpClient.delete({
-          path: `${PATH}/${id}`,
+          path: `${ADMIN_PATH}/${id}`,
           token: admin.token,
           expectedStatusCode: 200,
           dropBody: true,
@@ -88,7 +89,7 @@ suite('Categories integration tests', () => {
 
     test('Invalid - missing authorization token', async () => {
       await httpClient.post({
-        path: PATH,
+        path: ADMIN_PATH,
         token: 'none',
         expectedStatusCode: 401,
         options: {
@@ -102,7 +103,7 @@ suite('Categories integration tests', () => {
     test('Invalid - unauthenticated', async () => {
       await validateUnauthenticated({
         httpClient,
-        path: PATH,
+        path: ADMIN_PATH,
         method: 'post',
         body: { slug: 'test', name: 'Test' },
       });
@@ -110,7 +111,7 @@ suite('Categories integration tests', () => {
 
     test('Invalid - bad slug', async () => {
       await httpClient.post({
-        path: PATH,
+        path: ADMIN_PATH,
         token: admin.token,
         expectedStatusCode: 400,
         options: {
@@ -127,7 +128,7 @@ suite('Categories integration tests', () => {
       const { created } = await createCategory(httpClient, admin.token, createdIds);
 
       const response = await httpClient.put({
-        path: `${PATH}/${created.id}`,
+        path: `${ADMIN_PATH}/${created.id}`,
         token: moderator.token,
         expectedStatusCode: 200,
         options: {
@@ -146,7 +147,7 @@ suite('Categories integration tests', () => {
       const { created } = await createCategory(httpClient, admin.token, createdIds);
 
       await httpClient.delete({
-        path: `${PATH}/${created.id}`,
+        path: `${ADMIN_PATH}/${created.id}`,
         token: moderator.token,
         expectedStatusCode: 403,
         dropBody: true,

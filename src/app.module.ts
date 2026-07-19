@@ -3,6 +3,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuthModule } from './auth/auth.module.ts';
 import { configuration } from './config/configuration.ts';
+import { AdminModule } from './entities/admins/admins.module.ts';
 import { AgeGroup } from './entities/age-groups/age-group.entity.ts';
 import { AgeGroupsModule } from './entities/age-groups/age-groups.module.ts';
 import { Article } from './entities/articles/articles.entity.ts';
@@ -20,6 +21,7 @@ import { UsersModule } from './entities/users/users.module.ts';
 
 @Module({
   imports: [
+    AdminModule,
     AgeGroupsModule,
     ArticlesModule,
     AudiencesModule,

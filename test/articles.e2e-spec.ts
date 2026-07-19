@@ -15,7 +15,7 @@ import { HttpClient } from './utilities/http-client.ts';
 // Fix: change langId in CreateArticleSchema to z.string().min(2).max(5).
 
 const PATH = '/articles';
-const ADMIN_PATH = '/articles/admin';
+const ADMIN_PATH = '/admin/articles';
 const UNKNOWN_ID = '00000000-0000-0000-0000-000000000000';
 
 /******************************************************************************************************/
@@ -54,7 +54,7 @@ suite('Articles integration tests', () => {
   suite('Create', () => {
     test('Invalid - missing authorization token', async () => {
       await httpClient.post({
-        path: PATH,
+        path: ADMIN_PATH,
         token: 'none',
         expectedStatusCode: 401,
         options: {
@@ -68,7 +68,7 @@ suite('Articles integration tests', () => {
     test('Invalid - unauthenticated', async () => {
       await validateUnauthenticated({
         httpClient,
-        path: PATH,
+        path: ADMIN_PATH,
         method: 'post',
         body: { langId: 'en', header: 'Test' },
       });
@@ -76,7 +76,7 @@ suite('Articles integration tests', () => {
 
     test('Invalid - langId as short string (schema expects uuid)', async () => {
       await httpClient.post({
-        path: PATH,
+        path: ADMIN_PATH,
         token: admin.token,
         expectedStatusCode: 400,
         options: {
@@ -89,7 +89,7 @@ suite('Articles integration tests', () => {
 
     test('Invalid - empty header', async () => {
       await httpClient.post({
-        path: PATH,
+        path: ADMIN_PATH,
         token: admin.token,
         expectedStatusCode: 400,
         options: {
@@ -107,7 +107,7 @@ suite('Articles integration tests', () => {
   suite('Update', () => {
     test('Invalid - patch without auth', async () => {
       await httpClient.patch({
-        path: `${PATH}/${UNKNOWN_ID}`,
+        path: `${ADMIN_PATH}/${UNKNOWN_ID}`,
         token: 'none',
         expectedStatusCode: 401,
         options: {
@@ -122,7 +122,7 @@ suite('Articles integration tests', () => {
   suite('Delete', () => {
     test('Invalid - moderator cannot delete', async () => {
       await httpClient.delete({
-        path: `${PATH}/${UNKNOWN_ID}`,
+        path: `${ADMIN_PATH}/${UNKNOWN_ID}`,
         token: moderator.token,
         expectedStatusCode: 403,
         dropBody: true,
