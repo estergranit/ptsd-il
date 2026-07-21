@@ -18,7 +18,7 @@ function configuration() {
         value: process.env.PORT,
         errorMessages,
       }),
-      healthcheckRoutes: ['alive', 'ready'],
+      healthcheckRoutes: ['/api/alive', '/api/ready'],
     },
     database: {
       url: isString({
