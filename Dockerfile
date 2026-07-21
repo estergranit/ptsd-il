@@ -6,10 +6,10 @@ COPY package*.json ./
 COPY eslint.config.mjs nest-cli.json package*.json tsconfig*.json ./
 COPY src src/
 
-RUN npm clean-install --include=dev \
+RUN npm install --include=dev \
     && npm run build \
     && rm -f dist/tsconfig.prod.tsbuildinfo \
-    && npm clean-install --omit=dev
+    && npm install --omit=dev
 
 FROM node:24-alpine AS production
 
