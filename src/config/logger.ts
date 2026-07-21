@@ -34,20 +34,27 @@ function configureLogger(configurationService: ConfigurationService<Configuratio
       }),
   );
 
+  // In production (e.g. Render) the container filesystem is ephemeral, so log to
+  // stdout where the platform captures it. Locally, roll daily log files.
+  const transport =
+    process.env.NODE_ENV === 'production'
+      ? { target: 'pino/file', options: { destination: 1 } } // 1 = stdout
+      : {
+          target: 'pino-roll',
+          options: {
+            file: join(import.meta.dirname, '..', '..', 'logs', 'ptsd_api'),
+            mkdir: true,
+            frequency: 'daily',
+            dateFormat: 'yyyy-MM-dd',
+            extension: '.log',
+            size: '16m',
+            limit: { count: 13 }, // 13 rotated + 1 active => 14 days retention
+          },
+        };
+
   return {
     pinoHttp: {
-      transport: {
-            target: 'pino-roll',
-            options: {
-              file: join(import.meta.dirname, '..', '..', 'logs', 'ptsd_api'),
-              mkdir: true,
-              frequency: 'daily',
-              dateFormat: 'yyyy-MM-dd',
-              extension: '.log',
-              size: '16m',
-              limit: { count: 13 }, // 13 rotated + 1 active => 14 days retention
-            },
-          },
+      transport,
       genReqId: (_request: IncomingMessage, response: ServerResponse) => {
         const requestId = randomUUID();
         response.setHeader('X-Request-Id', requestId);
