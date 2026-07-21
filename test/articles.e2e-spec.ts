@@ -9,11 +9,6 @@ import { HttpClient } from './utilities/http-client.ts';
 
 /******************************************************************************************************/
 
-// NOTE: Article.langId references Language.id which is a short ISO code (e.g. 'en'),
-// but CreateArticleSchema validates langId as z.string().uuid(). This is a schema mismatch
-// that will cause POST /api/articles to return 400 even with a valid language ID.
-// Fix: change langId in CreateArticleSchema to z.string().min(2).max(5).
-
 const PATH = '/articles';
 const ADMIN_PATH = '/admin/articles';
 const UNKNOWN_ID = '00000000-0000-0000-0000-000000000000';
@@ -29,6 +24,72 @@ suite('Articles integration tests', () => {
       const response = await httpClient.get({ path: PATH, token: 'none', expectedStatusCode: 200 });
 
       assert.ok(Array.isArray(await response!.json()));
+    });
+
+    test('Valid - public list filtered by categorySlug returns array', async () => {
+      const response = await httpClient.get({
+        path: `${PATH}?categorySlug=rights`,
+        token: 'none',
+        expectedStatusCode: 200,
+      });
+
+      assert.ok(Array.isArray(await response!.json()));
+    });
+
+    test('Invalid - categorySlug with illegal chars', async () => {
+      await httpClient.get({
+        path: `${PATH}?categorySlug=Not_A_Slug`,
+        token: 'none',
+        expectedStatusCode: 422,
+        dropBody: true,
+      });
+    });
+
+    test('Invalid - public single unknown id returns 404', async () => {
+      await httpClient.get({
+        path: `${PATH}/${UNKNOWN_ID}`,
+        token: 'none',
+        expectedStatusCode: 404,
+        dropBody: true,
+      });
+    });
+
+    test('Invalid - public single unpublished article returns 404', async () => {
+      const createResponse = await httpClient.post({
+        path: ADMIN_PATH,
+        token: admin.token,
+        expectedStatusCode: 201,
+        options: {
+          body: JSON.stringify({ langId: 'en', title: 'Unpublished', isPublished: false }),
+          headers: { 'content-type': 'application/json' },
+        },
+      });
+      const { id } = (await createResponse!.json()) as { id: string };
+
+      try {
+        // Public endpoint hides it...
+        await httpClient.get({
+          path: `${PATH}/${id}`,
+          token: 'none',
+          expectedStatusCode: 404,
+          dropBody: true,
+        });
+
+        // ...but admin can still fetch it (proves it exists, only publish state hides it).
+        await httpClient.get({
+          path: `${ADMIN_PATH}/${id}`,
+          token: admin.token,
+          expectedStatusCode: 200,
+          dropBody: true,
+        });
+      } finally {
+        await httpClient.delete({
+          path: `${ADMIN_PATH}/${id}`,
+          token: admin.token,
+          expectedStatusCode: 200,
+          dropBody: true,
+        });
+      }
     });
 
     test('Invalid - admin list without auth', async () => {
@@ -58,7 +119,7 @@ suite('Articles integration tests', () => {
         token: 'none',
         expectedStatusCode: 401,
         options: {
-          body: JSON.stringify({ langId: 'en', header: 'Test' }),
+          body: JSON.stringify({ langId: 'en', title: 'Test' }),
           headers: { 'content-type': 'application/json' },
         },
         dropBody: true,
@@ -70,33 +131,30 @@ suite('Articles integration tests', () => {
         httpClient,
         path: ADMIN_PATH,
         method: 'post',
-        body: { langId: 'en', header: 'Test' },
+        body: { langId: 'en', title: 'Test' },
       });
     });
 
-    test('Invalid - langId as short string (schema expects uuid)', async () => {
+    test('Invalid - langId too long (max 5 chars)', async () => {
       await httpClient.post({
         path: ADMIN_PATH,
         token: admin.token,
-        expectedStatusCode: 400,
+        expectedStatusCode: 422,
         options: {
-          body: JSON.stringify({ langId: 'en', header: 'Test Article' }),
+          body: JSON.stringify({ langId: 'english', title: 'Test Article' }),
           headers: { 'content-type': 'application/json' },
         },
         dropBody: true,
       });
     });
 
-    test('Invalid - empty header', async () => {
+    test('Invalid - empty title', async () => {
       await httpClient.post({
         path: ADMIN_PATH,
         token: admin.token,
-        expectedStatusCode: 400,
+        expectedStatusCode: 422,
         options: {
-          body: JSON.stringify({
-            langId: '00000000-0000-0000-0000-000000000001',
-            header: '',
-          }),
+          body: JSON.stringify({ langId: 'en', title: '' }),
           headers: { 'content-type': 'application/json' },
         },
         dropBody: true,
@@ -111,7 +169,7 @@ suite('Articles integration tests', () => {
         token: 'none',
         expectedStatusCode: 401,
         options: {
-          body: JSON.stringify({ header: 'Updated' }),
+          body: JSON.stringify({ title: 'Updated' }),
           headers: { 'content-type': 'application/json' },
         },
         dropBody: true,

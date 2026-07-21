@@ -20,7 +20,17 @@ export class ArticlesService {
   ) {}
 
   public async findPublished(query: QueryArticleDto): Promise<Article[]> {
-    const { langId, categoryId, audienceId, ageGroupId } = query;
+    const {
+      type,
+      langId,
+      categoryId,
+      categorySlug,
+      audienceId,
+      audienceSlug,
+      ageGroupId,
+      ageGroupSlug,
+      parentId,
+    } = query;
 
     const qb = this.articlesRepo
       .createQueryBuilder('article')
@@ -29,27 +39,55 @@ export class ArticlesService {
       .leftJoinAndSelect('article.ageGroups', 'ageGroup')
       .where('article.isPublished = true');
 
+    if (type) {
+      qb.andWhere('article.type = :type', { type });
+    }
     if (langId) {
       qb.andWhere('article.langId = :langId', { langId });
     }
     if (categoryId) {
       qb.andWhere('category.id = :categoryId', { categoryId });
     }
+    if (categorySlug) {
+      qb.andWhere('category.slug = :categorySlug', { categorySlug });
+    }
     if (audienceId) {
       qb.andWhere('audience.id = :audienceId', { audienceId });
     }
+    if (audienceSlug) {
+      qb.andWhere('audience.slug = :audienceSlug', { audienceSlug });
+    }
     if (ageGroupId) {
       qb.andWhere('ageGroup.id = :ageGroupId', { ageGroupId });
+    }
+    if (ageGroupSlug) {
+      qb.andWhere('ageGroup.slug = :ageGroupSlug', { ageGroupSlug });
+    }
+    if (parentId) {
+      qb.andWhere('article.parentId = :parentId', { parentId });
     }
 
     return await qb.orderBy('article.sortOrder', 'ASC').addOrderBy('article.createdAt', 'DESC').getMany();
   }
 
+  public async findOnePublished(id: string): Promise<Article> {
+    const article = await this.articlesRepo.findOne({
+      where: { id, isPublished: true },
+      relations: { categories: true, audiences: true, ageGroups: true },
+    });
+    if (!article) {
+      throw new NotFoundException();
+    }
+    return article;
+  }
+
   public findAll(query: QueryArticleDto): Promise<Article[]> {
-    const { langId, categoryId } = query;
+    const { type, langId, categoryId, parentId } = query;
     return this.articlesRepo.find({
       where: {
+        ...(type && { type }),
         ...(langId && { langId }),
+        ...(parentId && { parentId }),
         ...(categoryId && { categories: { id: categoryId } }),
       },
       relations: { categories: true, audiences: true, ageGroups: true },

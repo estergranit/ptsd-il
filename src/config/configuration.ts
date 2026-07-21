@@ -18,6 +18,7 @@ function configuration() {
         value: process.env.PORT,
         errorMessages,
       }),
+      healthcheckRoutes: ['alive', 'ready'],
     },
     database: {
       url: isString({
@@ -27,18 +28,22 @@ function configuration() {
       }),
     },
     jwt: {
-      secret: {
-        url: isString({
-          key: 'JWT_SECRET',
-          value: process.env.JWT_SECRET,
-          errorMessages
-        }),
-      },
+      secret: isString({
+        key: 'JWT_SECRET',
+        value: process.env.JWT_SECRET,
+        errorMessages
+      }),
       expiresIn: isString({
         key: 'JWT_EXPIRES_IN',
         value: process.env.JWT_EXPIRES_IN,
         errorMessages
       }),
+    },
+    log: {
+      level: process.env.LOG_LEVEL ?? 'info',
+      dir: process.env.LOG_DIR ?? 'logs',
+      // Number of rotated files to keep before the oldest is deleted.
+      retentionDays: Number(process.env.LOG_RETENTION_DAYS ?? 30),
     },
   }
 

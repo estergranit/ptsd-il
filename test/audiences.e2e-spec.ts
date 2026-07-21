@@ -13,7 +13,11 @@ const PATH = '/audiences';
 const ADMIN_PATH = '/admin/audiences';
 
 async function createAudience(httpClient: HttpClient, token: string, createdIds: string[]) {
-  const body = { name: `E2E ${randomString(8)}`, description: 'Test audience' };
+  const body = {
+    slug: `e2e-${randomString(8)}`,
+    name: `E2E ${randomString(8)}`,
+    description: 'Test audience',
+  };
 
   const response = await httpClient.post({
     path: ADMIN_PATH,
@@ -89,9 +93,35 @@ suite('Audiences integration tests', () => {
       await httpClient.post({
         path: ADMIN_PATH,
         token: admin.token,
-        expectedStatusCode: 400,
+        expectedStatusCode: 422,
         options: {
           body: JSON.stringify({ name: '' }),
+          headers: { 'content-type': 'application/json' },
+        },
+        dropBody: true,
+      });
+    });
+
+    test('Invalid - slug with illegal chars', async () => {
+      await httpClient.post({
+        path: ADMIN_PATH,
+        token: admin.token,
+        expectedStatusCode: 422,
+        options: {
+          body: JSON.stringify({ slug: 'Not_A_Slug', name: 'Veterans' }),
+          headers: { 'content-type': 'application/json' },
+        },
+        dropBody: true,
+      });
+    });
+
+    test('Invalid - missing slug', async () => {
+      await httpClient.post({
+        path: ADMIN_PATH,
+        token: admin.token,
+        expectedStatusCode: 422,
+        options: {
+          body: JSON.stringify({ name: 'Veterans' }),
           headers: { 'content-type': 'application/json' },
         },
         dropBody: true,

@@ -20,16 +20,16 @@ export class Community {
   @Column({ type: 'text', nullable: true })
   public description: string | null;
 
-  @Column({ nullable: true })
+  @Column('varchar', { nullable: true })
   public location: string | null;
 
-  @Column({ nullable: true })
+  @Column('varchar', { nullable: true })
   public meetingType: string | null;
 
-  @Column({ nullable: true })
+  @Column('varchar', { nullable: true })
   public organization: string | null;
 
-  @Column({ nullable: true })
+  @Column('varchar', { nullable: true })
   public contactUrl: string | null;
 
   @ManyToMany(() => { return Audience })

@@ -23,10 +23,10 @@ export class User {
   @Column()
   public lastName: string;
 
-  @Column({ unique: true, nullable: true })
+  @Column('varchar', { unique: true, nullable: true })
   public email: string | null;
 
-  @Column({ nullable: true })
+  @Column('varchar', { nullable: true })
   public phone: string | null;
 
   @Column()

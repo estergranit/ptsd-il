@@ -13,6 +13,80 @@ const PATH = '/communities';
 const ADMIN_PATH = '/admin/communities';
 const UNKNOWN_ID = '00000000-0000-0000-0000-000000000000';
 
+// Snapshot of the real production data from ../PTSD.IL/src/data/static/communities.js
+// (STATIC_COMMUNITIES), field-mapped to the backend Community schema:
+//   description_he -> description, meeting_type -> meetingType, contact_url -> contactUrl.
+// NOTE (gap): the frontend `id` (slug) and `target_audience[]` have no place in the
+// backend CreateCommunity schema and are intentionally dropped. `location` is a free
+// string here but a fixed enum on the frontend.
+const STATIC_COMMUNITIES = [
+  {
+    name: 'נט"ל - קבוצות תמיכה',
+    description:
+      'קבוצות תמיכה וטיפוליות לנפגעי טראומה ופוסט-טראומה על רקע מלחמה וטרור ולבני משפחותיהם.',
+    location: 'center',
+    meetingType: 'frontal',
+    organization: 'עמותת נט"ל',
+    contactUrl:
+      'https://www.natal.org.il/תמיכה-וטיפול-נפשי/קבוצות-טיפוליות-וקבוצות-תמיכה/',
+  },
+  {
+    name: 'איגוד מרכזי הסיוע לנפגעות ולנפגעי תקיפה מינית',
+    description:
+      'קווי סיוע ארציים (1202 לנשים, 1203 לגברים) וצ\'אט "קולמילה", וכן רשת ארצית של מרכזי סיוע אזוריים לנפגעות ולנפגעי תקיפה מינית ומשפחותיהם.',
+    location: 'online',
+    meetingType: 'hybrid',
+    organization: 'איגוד מרכזי הסיוע לנפגעות ולנפגעי תקיפה מינית',
+    contactUrl: 'https://www.1202.org.il/',
+  },
+  {
+    name: 'נט"ל - קבוצות לבנות ובני זוג של מתמודדים ומתמודדות',
+    description:
+      'קבוצת תמיכה ייחודית לבני ובנות זוג של נפגעי פוסט-טראומה, ללימוד והתחזקות בהתמודדות המשותפת.',
+    location: 'center',
+    meetingType: 'frontal',
+    organization: 'עמותת נט"ל',
+    contactUrl:
+      'https://www.natal.org.il/תמיכה-וטיפול-נפשי/קבוצות-טיפוליות-וקבוצות-תמיכה/קבוצות-לבנות-ובני-זוג-של-מתמודדים-ומתמודדות/partners-support-group/',
+  },
+  {
+    name: 'מרכז חוסן - ירושלים (עמך)',
+    description:
+      'מרכז טיפול ותמיכה נפשית לנפגעי פעולות איבה, טראומה וחרדה ומשפחותיהם - טיפול פרטני, קבוצתי ומשפחתי, בטלפון, בזום או פנים אל פנים.',
+    location: 'jerusalem',
+    meetingType: 'hybrid',
+    organization: 'עמותת עמך',
+    contactUrl: 'https://www.amcha.org/',
+  },
+  {
+    name: 'המעגל - לא לבד - קהילה תומכת למשפחות נפגעי פוסט-טראומה',
+    description:
+      'קהילה תומכת וקבוצות תמיכה למשפחות ולבני/בנות זוג של מתמודדים עם פוסט-טראומה על רקע ביטחוני, ללימוד, חיזוק וליווי בהתמודדות המשפחתית.',
+    location: 'center',
+    meetingType: 'frontal',
+    organization: 'לא לבד',
+    contactUrl: 'https://www.hamaagal.co.il/',
+  },
+  {
+    name: 'קבוצות תמיכה לנכי צה"ל המתמודדים עם פוסט-טראומה',
+    description:
+      'עשרות קבוצות טיפוליות הפתוחות להרשמה ברחבי הארץ לנכי ולנכות צה"ל המתמודדים עם פוסט-טראומה - מרחב לשיתוף, התחברות והתחזקות. ניתן לסנן קבוצות לפי אזור ונושא.',
+    location: 'center',
+    meetingType: 'frontal',
+    organization: 'אגף השיקום, משרד הביטחון',
+    contactUrl: 'https://shikum.mod.gov.il/groups',
+  },
+  {
+    name: "הורים לפצועי 'חרבות ברזל'",
+    description:
+      'קבוצת תמיכה להורים לחיילות ולחיילים שנפצעו במלחמת חרבות ברזל - מרחב לשיתוף, התחברות והתחזקות.',
+    location: 'center',
+    meetingType: 'frontal',
+    organization: 'אגף השיקום, משרד הביטחון',
+    contactUrl: 'https://shikum.mod.gov.il/groups/4548',
+  },
+] as const;
+
 type CommunityOverrides = Record<string, unknown>;
 
 function generateCommunity(overrides: CommunityOverrides = {}) {
@@ -129,7 +203,7 @@ suite('Communities integration tests', () => {
       await httpClient.post({
         path: ADMIN_PATH,
         token: admin.token,
-        expectedStatusCode: 400,
+        expectedStatusCode: 422,
         options: {
           body: JSON.stringify({ name: 'Test', contactUrl: 'not-a-url' }),
           headers: { 'content-type': 'application/json' },
@@ -169,5 +243,26 @@ suite('Communities integration tests', () => {
         dropBody: true,
       });
     });
+  });
+
+  suite('Static data (PTSD.IL)', () => {
+    for (const community of STATIC_COMMUNITIES) {
+      test(`Valid - accepts real community '${community.name}'`, async () => {
+        const response = await httpClient.post({
+          path: ADMIN_PATH,
+          token: admin.token,
+          expectedStatusCode: 201,
+          options: {
+            body: JSON.stringify(community),
+            headers: { 'content-type': 'application/json' },
+          },
+        });
+
+        const created = (await response!.json()) as { id: string; name: string };
+        createdIds.push(created.id);
+
+        assert.strictEqual(created.name, community.name);
+      });
+    }
   });
 });

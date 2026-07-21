@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { after, suite, test } from 'node:test';
 
 import { USERS } from './utilities/configuration.ts';
-import { validateUnauthenticated } from './utilities/functions.ts';
+import { randomString, validateUnauthenticated } from './utilities/functions.ts';
 import { HttpClient } from './utilities/http-client.ts';
 
 /******************************************************************************************************/
@@ -13,7 +13,7 @@ const PATH = '/age-groups';
 const ADMIN_PATH = '/admin/age-groups';
 
 async function createAgeGroup(httpClient: HttpClient, token: string, createdIds: string[]) {
-  const body = { name: 'Adults', min: 18, max: 65 };
+  const body = { slug: `e2e-${randomString(8)}`, name: 'Adults', min: 18, max: 65 };
 
   const response = await httpClient.post({
     path: ADMIN_PATH,
@@ -91,9 +91,35 @@ suite('Age-groups integration tests', () => {
       await httpClient.post({
         path: ADMIN_PATH,
         token: admin.token,
-        expectedStatusCode: 400,
+        expectedStatusCode: 422,
         options: {
           body: JSON.stringify({ name: '', min: -1, max: 0 }),
+          headers: { 'content-type': 'application/json' },
+        },
+        dropBody: true,
+      });
+    });
+
+    test('Invalid - slug with illegal chars', async () => {
+      await httpClient.post({
+        path: ADMIN_PATH,
+        token: admin.token,
+        expectedStatusCode: 422,
+        options: {
+          body: JSON.stringify({ slug: 'Not_A_Slug', name: 'Adults', min: 18, max: 65 }),
+          headers: { 'content-type': 'application/json' },
+        },
+        dropBody: true,
+      });
+    });
+
+    test('Invalid - missing slug', async () => {
+      await httpClient.post({
+        path: ADMIN_PATH,
+        token: admin.token,
+        expectedStatusCode: 422,
+        options: {
+          body: JSON.stringify({ name: 'Adults', min: 18, max: 65 }),
           headers: { 'content-type': 'application/json' },
         },
         dropBody: true,

@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 export const CreateAgeGroupSchema = z.object({
+  slug: z.string().min(1).regex(/^[a-z0-9-]+$/),
   name: z.string().min(1),
   description: z.string().nullable().optional(),
   min: z.number().int().nonnegative(),

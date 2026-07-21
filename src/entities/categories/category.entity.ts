@@ -15,7 +15,7 @@ export class Category {
   @Column({ unique: true })
   public slug: string;
 
-  @Column({ nullable: true })
+  @Column('uuid', { nullable: true })
   public parentId: string | null;
 
   @ManyToOne(() => { return Category }, (cat) => { return cat.children }, {

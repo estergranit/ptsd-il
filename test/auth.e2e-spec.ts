@@ -59,7 +59,7 @@ suite('Auth integration tests', () => {
     await httpClient.post({
       path: PATH,
       token: 'none',
-      expectedStatusCode: 400,
+      expectedStatusCode: 422,
       options: loginBody({ email: 'not-an-email', password: '' }),
       dropBody: true,
     });

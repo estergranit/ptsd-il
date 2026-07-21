@@ -107,7 +107,7 @@ suite('Languages integration tests', () => {
       await httpClient.post({
         path: ADMIN_PATH,
         token: admin.token,
-        expectedStatusCode: 400,
+        expectedStatusCode: 422,
         options: {
           body: JSON.stringify({ id: 'toolongid', name: '' }),
           headers: { 'content-type': 'application/json' },

@@ -1,8 +1,10 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { LoggerModule } from 'nestjs-pino';
 import { AuthModule } from './auth/auth.module.ts';
 import { configuration } from './config/configuration.ts';
+import { configureLogger } from './config/logger.ts';
 import { AdminModule } from './entities/admins/admins.module.ts';
 import { AgeGroup } from './entities/age-groups/age-group.entity.ts';
 import { AgeGroupsModule } from './entities/age-groups/age-groups.module.ts';
@@ -35,6 +37,10 @@ import { UsersModule } from './entities/users/users.module.ts';
       isGlobal: true,
     }),
     LanguagesModule,
+    LoggerModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: configureLogger,
+    }),
     TypeOrmModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (config: ConfigService) => {return ({

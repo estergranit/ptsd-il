@@ -4,7 +4,7 @@ import { Public } from '../utilities/decorators.ts';
 import { AuthService } from './auth.service.ts';
 import { LoginSchema, type LoginDto } from './dto/login.dto.ts';
 
-@Controller('auths')
+@Controller('auth')
 export class AuthController {
   public constructor(private readonly authService: AuthService) {}
 
