@@ -1,25 +1,65 @@
 {
   "compilerOptions": {
-    "module": "nodenext",
-    "moduleResolution": "nodenext",
-    "resolvePackageJsonExports": true,
-    "esModuleInterop": true,
-    "isolatedModules": true,
-    "declaration": true,
-    "removeComments": true,
-    "emitDecoratorMetadata": true,
-    "experimentalDecorators": true,
-    "allowSyntheticDefaultImports": true,
-    "target": "ES2023",
-    "sourceMap": true,
-    "outDir": "./dist",
-    "baseUrl": "./",
-    "incremental": true,
-    "skipLibCheck": true,
-    "strictNullChecks": true,
-    "forceConsistentCasingInFileNames": true,
-    "noImplicitAny": false,
-    "strictBindCallApply": false,
-    "noFallthroughCasesInSwitch": false
-  }
+  // Module options
+  "module": "nodenext",
+  "moduleResolution": "nodenext",
+  "types": ["node", "express"],
+  "noUncheckedSideEffectImports": true,
+  "resolveJsonModule": true,
+  "allowImportingTsExtensions": true,
+  "rewriteRelativeImportExtensions": true,
+ 
+  // Emit (NestJS compiles the code to dist and watches it using tsc --watch)
+  "outDir": "./dist",
+  "removeComments": true,
+  "inlineSourceMap": true,
+  "inlineSources": true,
+ 
+  // NestJS decorator support
+  "experimentalDecorators": true,
+  "emitDecoratorMetadata": true,
+ 
+  // Type checking
+  "allowUnreachableCode": false,
+  "allowUnusedLabels": false,
+  "alwaysStrict": true,
+  "noFallthroughCasesInSwitch": false,
+  "noImplicitAny": true,
+  "noImplicitOverride": true,
+  "noImplicitReturns": true,
+  "noImplicitThis": true,
+  "noUncheckedIndexedAccess": true,
+  "noUnusedLocals": true,
+  "noUnusedParameters": true,
+  "strict": true,
+  "strictBindCallApply": true,
+  "strictBuiltinIteratorReturn": true,
+  "strictFunctionTypes": true,
+  "strictNullChecks": true,
+  "strictPropertyInitialization": false,
+  "useUnknownInCatchVariables": true,
+ 
+  // Interop constraints
+  "allowSyntheticDefaultImports": true,
+  "esModuleInterop": true,
+  "forceConsistentCasingInFileNames": true,
+  "verbatimModuleSyntax": true,
+ 
+  // Language and Environment
+  "target": "ESNext",
+ 
+  // Output formatting
+  "noErrorTruncation": true,
+ 
+  // Completeness
+  "skipLibCheck": true,
+  },
+  // NestJS watch mode uses tsc so we ignore irrelevant directories
+  "watchOptions": {
+  "watchFile": "priorityPollingInterval",
+  "watchDirectory": "dynamicPriorityPolling",
+  "fallbackPolling": "dynamicPriority",
+  "excludeDirectories": [".vscode", "dist", "node_modules", "scripts"],
+  },
+  "include": ["src/**/*.ts", "test/**/*.ts", "knip.ts", "./scripts"],
 }

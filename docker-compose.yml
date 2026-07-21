@@ -10,26 +10,28 @@ services:
       - .env
     environment:
       # Override DB_HOST so it points to the compose service
-      DB_HOST: db
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres_db:5432/${POSTGRES_DB}
+    volumes:
+      - app_logs:/app/dist/logs
     depends_on:
-      db:
+      postgres_db:
         condition: service_healthy
     restart: unless-stopped
     networks:
       - app-network
 
-  db:
+  postgres_db:
     image: postgres:16-alpine
     environment:
-      POSTGRES_DB:       ${DB_NAME}
-      POSTGRES_USER:     ${DB_USER}
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB:       ${POSTGRES_DB}
+      POSTGRES_USER:     ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
       - "${DB_PORT:-5432}:5432"   # expose only if you need local DB access
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -43,3 +45,4 @@ networks:
 
 volumes:
   postgres_data:
+  app_logs:
