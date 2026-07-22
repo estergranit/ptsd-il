@@ -1,4 +1,3 @@
-import * as bcrypt from 'bcryptjs';
 import { DataSource, IsNull } from 'typeorm';
 import { randomUUID } from 'node:crypto';
 import { NestFactory } from '@nestjs/core';
@@ -27,21 +26,18 @@ const USERS = [
     firstName: process.env.SEED_ADMIN_FIRST_NAME ?? 'Site',
     lastName: process.env.SEED_ADMIN_LAST_NAME ?? 'Admin',
     email: process.env.SEED_ADMIN_EMAIL ?? 'admin@ptsd-il.local',
-    password: process.env.SEED_ADMIN_PASSWORD ?? 'Admin@local123!',
     roles: [UserRoles.ADMIN],
   },
   {
     firstName: process.env.SEED_MODERATOR_FIRST_NAME ?? 'Site',
     lastName: process.env.SEED_MODERATOR_LAST_NAME ?? 'Moderator',
     email: process.env.SEED_MODERATOR_EMAIL ?? 'moderator@ptsd-il.local',
-    password: process.env.SEED_MODERATOR_PASSWORD ?? 'Mod@local123!',
     roles: [UserRoles.MODERATOR],
   },
   {
     firstName: process.env.SEED_MASTERADMIN_FIRST_NAME ?? 'Site',
     lastName: process.env.SEED_MASTERADMIN_LAST_NAME ?? 'Masteradmin',
     email: process.env.SEED_MASTERADMIN_EMAIL ?? 'masteradmin@ptsd-il.local',
-    password: process.env.SEED_MASTERADMIN_PASSWORD ?? 'Master@local123!',
     roles: [UserRoles.MASTERADMIN],
   },
 ] as const;
@@ -63,7 +59,6 @@ async function seedUsers(dataSource: DataSource): Promise<void> {
         firstName: user.firstName,
         lastName: user.lastName,
         email: user.email,
-        password: await bcrypt.hash(user.password, 10),
         roles: [...user.roles],
       }),
     );

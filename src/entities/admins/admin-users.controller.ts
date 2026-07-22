@@ -9,7 +9,6 @@ import {
   type UpdateUserRolesDto,
 } from '../users/dto/update-user-roles.dto.ts';
 import { CreateUserSchema, type CreateUserDto } from '../users/dto/create-user.dto.ts';
-import { ResetPasswordSchema, type ResetPasswordDto } from '../users/dto/reset-password.dto.ts';
 
 @Controller('admin/users')
 export class AdminUsersController {
@@ -34,15 +33,6 @@ export class AdminUsersController {
     @Body(new ZodValidationPipe(UpdateUserRolesSchema)) body: UpdateUserRolesDto,
   ) {
     return this.usersService.updateRoles(id, body.roles);
-  }
-
-  @Put(':id/password')
-  @AllowedRoles([UserRoles.MASTERADMIN])
-  public resetPassword(
-    @Param('id') id: string,
-    @Body(new ZodValidationPipe(ResetPasswordSchema)) body: ResetPasswordDto,
-  ) {
-    return this.usersService.setPassword(id, body.newPassword);
   }
 
   @Delete(':id')

@@ -30,9 +30,6 @@ export class User {
   @Column('varchar', { nullable: true })
   public phone: string | null;
 
-  @Column()
-  public password: string;
-
   @Column('text', { array: true, default: [] })
   public roles: UserRoles[];
 

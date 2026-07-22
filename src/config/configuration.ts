@@ -5,6 +5,9 @@ const REQUIRED_ENVIRONMENT_VRIABLES = [
   'DATABASE_URL',
   'JWT_SECRET',
   'JWT_EXPIRES_IN',
+  'GOOGLE_CLIENT_ID',
+  'GOOGLE_CLIENT_SECRET',
+  'GOOGLE_CALLBACK_URL',
 ];
 
 function configuration() {
@@ -36,6 +39,23 @@ function configuration() {
       expiresIn: isString({
         key: 'JWT_EXPIRES_IN',
         value: process.env.JWT_EXPIRES_IN,
+        errorMessages
+      }),
+    },
+    google: {
+      clientID: isString({
+        key: 'GOOGLE_CLIENT_ID',
+        value: process.env.GOOGLE_CLIENT_ID,
+        errorMessages
+      }),
+      clientSecret: isString({
+        key: 'GOOGLE_CLIENT_SECRET',
+        value: process.env.GOOGLE_CLIENT_SECRET,
+        errorMessages
+      }),
+      callbackURL: isString({
+        key: 'GOOGLE_CALLBACK_URL',
+        value: process.env.GOOGLE_CALLBACK_URL,
         errorMessages
       }),
     },

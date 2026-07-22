@@ -2,7 +2,6 @@ FROM node:24-alpine AS builder
 
 WORKDIR /app
 
-COPY package*.json ./
 COPY eslint.config.mjs nest-cli.json package*.json tsconfig*.json ./
 COPY src src/
 

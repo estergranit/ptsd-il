@@ -1,32 +1,35 @@
-import { Body, Controller, Post, Req } from '@nestjs/common';
-import type { Request } from 'express';
-import { ZodValidationPipe } from '../pipes/zod-validation.pipe.ts';
-import { AllowedRoles, Public } from '../utilities/decorators.ts';
+import {
+  Controller,
+  Get,
+  HttpStatus,
+  Req,
+  Res,
+  UseGuards,
+} from '@nestjs/common';
+import type { Request, Response } from 'express';
 import { AuthService } from './auth.service.ts';
-import { LoginSchema, type LoginDto } from './dto/login.dto.ts';
-import { ChangePasswordSchema, type ChangePasswordDto } from './dto/change-password.dto.ts';
-import { UserRoles } from '../entities/users/user.entity.ts';
+import { GoogleOauthGuard } from './guards/google-oauth.guard.ts';
+import { Public } from '../utilities/decorators.ts';
 
 @Controller('auth')
 export class AuthController {
   public constructor(private readonly authService: AuthService) {}
 
-  @Post('login')
   @Public()
-  public login(@Body(new ZodValidationPipe(LoginSchema)) dto: LoginDto) {
-    return this.authService.login(dto.email, dto.password);
-  }
+  @Get('google')
+  @UseGuards(GoogleOauthGuard)
+  // eslint-disable-next-line @typescript-eslint/no-empty-function
+  public async auth() {}
 
-  @Post('change-password')
-  @AllowedRoles([UserRoles.MASTERADMIN, UserRoles.ADMIN, UserRoles.MODERATOR, UserRoles.VIEWER])
-  public changePassword(
-    @Req() request: Request,
-    @Body(new ZodValidationPipe(ChangePasswordSchema)) body: ChangePasswordDto,
-  ) {
-    return this.authService.changePassword(
-      request.context.id,
-      body.currentPassword,
-      body.newPassword,
-    );
+  @Public()
+  @Get('google/callback')
+  @UseGuards(GoogleOauthGuard)
+  public async googleAuthCallback(@Req() req: Request, @Res() res: Response) {
+    const { email } = req.user as { email: string };
+    const token = await this.authService.login(email);
+
+    res.cookie('access_token', token.accessToken, { httpOnly: true });
+
+    return res.sendStatus(HttpStatus.OK);
   }
 }
