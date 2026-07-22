@@ -14,6 +14,10 @@ const USERS = {
     email: process.env.TEST_MODERATOR_EMAIL ?? 'moderator@ptsd-il.local',
     password: process.env.TEST_MODERATOR_PASSWORD ?? 'Mod@local123!',
   },
+  masteradmin: {
+    email: process.env.TEST_MASTERADMIN_EMAIL ?? 'masteradmin@ptsd-il.local',
+    password: process.env.TEST_MASTERADMIN_PASSWORD ?? 'Master@local123!',
+  },
 } as const;
 
 /******************************************************************************************************/

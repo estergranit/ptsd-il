@@ -7,6 +7,7 @@ import {
 } from 'typeorm';
 
 export enum UserRoles {
+  MASTERADMIN = 'masteradmin',
   ADMIN = 'admin',
   MODERATOR = 'moderator',
   VIEWER = 'viewer',

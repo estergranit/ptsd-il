@@ -37,6 +37,13 @@ const USERS = [
     password: process.env.SEED_MODERATOR_PASSWORD ?? 'Mod@local123!',
     roles: [UserRoles.MODERATOR],
   },
+  {
+    firstName: process.env.SEED_MASTERADMIN_FIRST_NAME ?? 'Site',
+    lastName: process.env.SEED_MASTERADMIN_LAST_NAME ?? 'Masteradmin',
+    email: process.env.SEED_MASTERADMIN_EMAIL ?? 'masteradmin@ptsd-il.local',
+    password: process.env.SEED_MASTERADMIN_PASSWORD ?? 'Master@local123!',
+    roles: [UserRoles.MASTERADMIN],
+  },
 ] as const;
 
 /******************************************************************************************************/
