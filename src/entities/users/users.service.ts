@@ -3,6 +3,7 @@ import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { User, UserRoles } from './user.entity.ts';
+import type { CreateUserDto } from './dto/create-user.dto.ts';
 
 export type SafeUser = Omit<User, 'password'>;
 
@@ -17,18 +18,25 @@ export class UsersService {
     return this.usersRepo.findOne({ where: { email } });
   }
 
-  public async create(
-    email: string,
-    password: string,
-    roles: UserRoles[] = [UserRoles.VIEWER],
-  ): Promise<User> {
-    const exists = await this.findByEmail(email);
+  public async createUser(dto: CreateUserDto): Promise<SafeUser> {
+    const exists = await this.findByEmail(dto.email);
     if (exists) {
       throw new ConflictException('Email already in use');
     }
 
-    const hashed = await bcrypt.hash(password, 10);
-    return await this.usersRepo.save(this.usersRepo.create({ email, password: hashed, roles }));
+    const hashed = await bcrypt.hash(dto.password, 10);
+    const saved = await this.usersRepo.save(
+      this.usersRepo.create({
+        firstName: dto.firstName,
+        lastName: dto.lastName,
+        email: dto.email,
+        phone: dto.phone ?? null,
+        password: hashed,
+        roles: dto.roles ?? [UserRoles.VIEWER],
+      }),
+    );
+    const { password: _password, ...safe } = saved;
+    return safe;
   }
 
   public validatePassword(user: User, password: string): Promise<boolean> {
@@ -67,5 +75,20 @@ export class UsersService {
     if (!result.affected) {
       throw new NotFoundException('User not found');
     }
+  }
+
+  public findById(id: string): Promise<User | null> {
+    return this.usersRepo.findOne({ where: { id } });
+  }
+
+  public async setPassword(id: string, plainPassword: string): Promise<{ message: string }> {
+    const user = await this.usersRepo.findOne({ where: { id } });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    user.password = await bcrypt.hash(plainPassword, 10);
+    await this.usersRepo.save(user);
+    return { message: 'Password updated' };
   }
 }

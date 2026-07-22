@@ -1,7 +1,7 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../entities/users/users.service.ts';
-import type { JwtPayload } from './strategies/jwt.strategy.ts';
+import type { JwtPayload } from './types/jwt-payload.type.ts';
 
 @Injectable()
 export class AuthService {
@@ -23,5 +23,24 @@ export class AuthService {
 
     const payload: JwtPayload = { sub: user.id, email: user.email ?? '', roles: user.roles };
     return { accessToken: this.jwtService.sign(payload) };
+  }
+
+  public async changePassword(
+    userId: string,
+    currentPassword: string,
+    newPassword: string,
+  ): Promise<{ message: string }> {
+    const user = await this.usersService.findById(userId);
+    if (!user) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+
+    const valid = await this.usersService.validatePassword(user, currentPassword);
+    if (!valid) {
+      throw new UnauthorizedException('Current password is incorrect');
+    }
+
+    await this.usersService.setPassword(userId, newPassword);
+    return { message: 'Password changed' };
   }
 }

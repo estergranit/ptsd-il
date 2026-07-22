@@ -8,7 +8,7 @@ import type { Request } from 'express';
 import { Reflector } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
 import type { DecoratorKey } from '../../utilities/decorators.ts';
-import type { JwtPayload } from '../strategies/jwt.strategy.ts';
+import type { JwtPayload } from '../types/jwt-payload.type.ts';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
@@ -31,7 +31,6 @@ export class AuthGuard implements CanActivate {
     }
 
     try {
-      // TODO: change this according to the implement jwt strategy
       const payload: JwtPayload = await this.jwtService.verifyAsync(token);
       request.context = {
         id: payload.sub,

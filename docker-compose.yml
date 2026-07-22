@@ -10,6 +10,7 @@ services:
       - .env
     environment:
       # Override DB_HOST so it points to the compose service
+      DB_SSL: false
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres_db:5432/${POSTGRES_DB}
     volumes:
       - app_logs:/app/dist/logs

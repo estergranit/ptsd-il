@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, ForbiddenException, Get, Param, Put, Req } from '@nestjs/common';
+import { Body, Controller, Delete, ForbiddenException, Get, Param, Post, Put, Req } from '@nestjs/common';
 import type { Request } from 'express';
 import { UserRoles } from '../users/user.entity.ts';
 import { AllowedRoles } from '../../utilities/decorators.ts';
@@ -8,6 +8,8 @@ import {
   UpdateUserRolesSchema,
   type UpdateUserRolesDto,
 } from '../users/dto/update-user-roles.dto.ts';
+import { CreateUserSchema, type CreateUserDto } from '../users/dto/create-user.dto.ts';
+import { ResetPasswordSchema, type ResetPasswordDto } from '../users/dto/reset-password.dto.ts';
 
 @Controller('admin/users')
 export class AdminUsersController {
@@ -19,6 +21,12 @@ export class AdminUsersController {
     return this.usersService.findAll();
   }
 
+  @Post()
+  @AllowedRoles([UserRoles.MASTERADMIN])
+  public create(@Body(new ZodValidationPipe(CreateUserSchema)) body: CreateUserDto) {
+    return this.usersService.createUser(body);
+  }
+
   @Put(':id/roles')
   @AllowedRoles([UserRoles.MASTERADMIN])
   public updateRoles(
@@ -26,6 +34,15 @@ export class AdminUsersController {
     @Body(new ZodValidationPipe(UpdateUserRolesSchema)) body: UpdateUserRolesDto,
   ) {
     return this.usersService.updateRoles(id, body.roles);
+  }
+
+  @Put(':id/password')
+  @AllowedRoles([UserRoles.MASTERADMIN])
+  public resetPassword(
+    @Param('id') id: string,
+    @Body(new ZodValidationPipe(ResetPasswordSchema)) body: ResetPasswordDto,
+  ) {
+    return this.usersService.setPassword(id, body.newPassword);
   }
 
   @Delete(':id')
