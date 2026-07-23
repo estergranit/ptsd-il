@@ -1,33 +1,53 @@
 /* eslint-disable @typescript-eslint/no-floating-promises */
 
-import assert from 'node:assert/strict';
 import { suite, test } from 'node:test';
 
-import { API_BASE_URL } from './utilities/configuration.ts';
+import { HttpClient } from './utilities/http-client.ts';
 
 /******************************************************************************************************/
 
-const GOOGLE_CONSENT_HOST = /accounts\.google\.com/;
+// Auth is Google ID-token only: the frontend obtains a Google ID token and posts it here; the
+// server verifies it with Google and mints its own JWT. A valid Google token cannot be produced
+// headless, so these tests cover request validation and rejection of bogus tokens.
 
-// Auth is Google OAuth only. The real consent flow cannot run headless, so these tests cover the
-// parts the server controls: the redirect into Google, and rejection of a callback with no session.
+const PATH = '/auth/google';
 
-suite('Google OAuth integration tests', () => {
-  test('Valid - GET /auth/google redirects to Google consent', async () => {
-    const response = await fetch(`${API_BASE_URL}/auth/google`, { redirect: 'manual' });
-    await response.body?.cancel();
+function jsonBody(body: unknown) {
+  return { body: JSON.stringify(body), headers: { 'content-type': 'application/json' } };
+}
 
-    assert.strictEqual(response.status, 302);
-    const location = response.headers.get('location') ?? '';
-    assert.match(location, GOOGLE_CONSENT_HOST);
+/******************************************************************************************************/
+
+suite('Google ID-token auth integration tests', () => {
+  const httpClient = new HttpClient();
+
+  test('Invalid - missing idToken rejected (422)', async () => {
+    await httpClient.post({
+      path: PATH,
+      token: 'none',
+      expectedStatusCode: 422,
+      options: jsonBody({}),
+      dropBody: true,
+    });
   });
 
-  test('Invalid - callback without a Google session is rejected', async () => {
-    const response = await fetch(`${API_BASE_URL}/auth/google/callback`, { redirect: 'manual' });
-    await response.body?.cancel();
+  test('Invalid - empty idToken rejected (422)', async () => {
+    await httpClient.post({
+      path: PATH,
+      token: 'none',
+      expectedStatusCode: 422,
+      options: jsonBody({ idToken: '' }),
+      dropBody: true,
+    });
+  });
 
-    // Passport rejects the unauthenticated callback (401) rather than issuing a token (200).
-    assert.notStrictEqual(response.status, 200);
-    assert.ok(response.status === 401 || response.status >= 300);
+  test('Invalid - bogus idToken rejected (401)', async () => {
+    await httpClient.post({
+      path: PATH,
+      token: 'none',
+      expectedStatusCode: 401,
+      options: jsonBody({ idToken: 'not-a-real-google-token' }),
+      dropBody: true,
+    });
   });
 });
