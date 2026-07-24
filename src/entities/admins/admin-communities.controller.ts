@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Param, Post, Put } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Put } from '@nestjs/common';
 import { UserRoles } from '../users/user.entity.ts';
 import { AllowedRoles } from '../../utilities/decorators.ts';
 import { ZodValidationPipe } from '../../pipes/zod-validation.pipe.ts';
@@ -8,6 +8,12 @@ import { CreateCommunitySchema, UpdateCommunitySchema, type CreateCommunityDto, 
 @Controller('admin/communities')
 export class AdminCommunitiesController {
   public constructor(private readonly communitiesService: CommunitiesService) {}
+
+  @Get('group/:groupId')
+  @AllowedRoles([UserRoles.ADMIN, UserRoles.MODERATOR])
+  public findByGroupId(@Param('groupId') groupId: string) {
+    return this.communitiesService.findByGroupId(groupId);
+  }
 
   @Post()
   @AllowedRoles([UserRoles.ADMIN, UserRoles.MODERATOR])

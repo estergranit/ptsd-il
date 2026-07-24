@@ -159,6 +159,7 @@ async function seedCommunities(
       meetingType: c.meetingType,
       organization: c.organization,
       contactUrl: c.contactUrl,
+      langId: c.langId ?? 'he',
       targetAudiences: c.audienceKeys
         .map((key) => audiencesByKey.get(key))
         .filter((a): a is Audience => Boolean(a)),

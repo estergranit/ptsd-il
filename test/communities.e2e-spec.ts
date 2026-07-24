@@ -94,6 +94,7 @@ function generateCommunity(overrides: CommunityOverrides = {}) {
     name: `E2E ${randomString(8)}`,
     description: 'Created in e2e test',
     isActive: true,
+    langId: 'he',
     ...overrides,
   };
 }
@@ -253,7 +254,7 @@ suite('Communities integration tests', () => {
           token: admin.token,
           expectedStatusCode: 201,
           options: {
-            body: JSON.stringify(community),
+            body: JSON.stringify({ ...community, langId: 'he' }),
             headers: { 'content-type': 'application/json' },
           },
         });
@@ -264,5 +265,138 @@ suite('Communities integration tests', () => {
         assert.strictEqual(created.name, community.name);
       });
     }
+  });
+
+  suite('Multi-language', () => {
+    test('Valid - create persists langId and auto-generates groupId', async () => {
+      const { created } = await createCommunity(httpClient, admin.token, createdIds);
+
+      const response = await httpClient.get({
+        path: `${PATH}/${created.id}`,
+        token: 'none',
+        expectedStatusCode: 200,
+      });
+      const body = (await response!.json()) as { langId: string; groupId: string | null };
+
+      assert.strictEqual(body.langId, 'he');
+      assert.ok(body.groupId);
+    });
+
+    test('Invalid - missing langId returns 422', async () => {
+      await httpClient.post({
+        path: ADMIN_PATH,
+        token: admin.token,
+        expectedStatusCode: 422,
+        options: {
+          body: JSON.stringify({ name: `E2E ${randomString(8)}` }),
+          headers: { 'content-type': 'application/json' },
+        },
+        dropBody: true,
+      });
+    });
+
+    test('Valid - create with explicit langId', async () => {
+      const { created } = await createCommunity(httpClient, admin.token, createdIds, {
+        langId: 'ar',
+      });
+
+      const response = await httpClient.get({
+        path: `${PATH}/${created.id}`,
+        token: 'none',
+        expectedStatusCode: 200,
+      });
+      const body = (await response!.json()) as { langId: string };
+
+      assert.strictEqual(body.langId, 'ar');
+    });
+
+    test('Valid - list filtered by langId', async () => {
+      await createCommunity(httpClient, admin.token, createdIds, { langId: 'en' });
+
+      const response = await httpClient.get({
+        path: `${PATH}?langId=en`,
+        token: 'none',
+        expectedStatusCode: 200,
+      });
+      const body = (await response!.json()) as { langId: string }[];
+
+      assert.ok(Array.isArray(body));
+      assert.ok(body.every((c) => {return c.langId === 'en'}));
+    });
+
+    test('Valid - admin group route returns translation set', async () => {
+      // create he row, capture its groupId, then create ar sibling sharing it
+      const { created: he } = await createCommunity(httpClient, admin.token, createdIds);
+
+      const heDetail = await httpClient.get({
+        path: `${PATH}/${he.id}`,
+        token: 'none',
+        expectedStatusCode: 200,
+      });
+      const { groupId } = (await heDetail!.json()) as { groupId: string };
+
+      await createCommunity(httpClient, admin.token, createdIds, { langId: 'ar', groupId });
+
+      const response = await httpClient.get({
+        path: `${ADMIN_PATH}/group/${groupId}`,
+        token: admin.token,
+        expectedStatusCode: 200,
+      });
+      const body = (await response!.json()) as { groupId: string; langId: string }[];
+
+      assert.strictEqual(body.length, 2);
+      assert.ok(body.every((c) => {return c.groupId === groupId}));
+    });
+
+    test('Invalid - group route requires auth', async () => {
+      await httpClient.get({
+        path: `${ADMIN_PATH}/group/${UNKNOWN_ID}`,
+        token: 'none',
+        expectedStatusCode: 401,
+        dropBody: true,
+      });
+    });
+  });
+
+  suite('Filter by audience', () => {
+    test('Valid - list filtered by audienceId and audienceSlug', async () => {
+      const audRes = await httpClient.get({
+        path: '/audiences',
+        token: 'none',
+        expectedStatusCode: 200,
+      });
+      const audiences = (await audRes!.json()) as { id: string; slug: string }[];
+      const [audience] = audiences;
+      assert.ok(audience, 'seed must provide at least one audience');
+
+      const { created } = await createCommunity(httpClient, admin.token, createdIds, {
+        audienceIds: [audience.id],
+      });
+
+      const byId = await httpClient.get({
+        path: `${PATH}?audienceId=${audience.id}`,
+        token: 'none',
+        expectedStatusCode: 200,
+      });
+      const byIdBody = (await byId!.json()) as { id: string }[];
+      assert.ok(byIdBody.some((c) => {return c.id === created.id}));
+
+      const bySlug = await httpClient.get({
+        path: `${PATH}?audienceSlug=${audience.slug}`,
+        token: 'none',
+        expectedStatusCode: 200,
+      });
+      const bySlugBody = (await bySlug!.json()) as { id: string }[];
+      assert.ok(bySlugBody.some((c) => {return c.id === created.id}));
+    });
+
+    test('Invalid - malformed audienceSlug returns 422', async () => {
+      await httpClient.get({
+        path: `${PATH}?audienceSlug=Bad_Slug`,
+        token: 'none',
+        expectedStatusCode: 422,
+        dropBody: true,
+      });
+    });
   });
 });

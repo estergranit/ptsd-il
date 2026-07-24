@@ -7,7 +7,7 @@ export interface SeedLanguage { id: string; name: string; direction: string }
 export interface SeedCategory { slug: string; name: string; parentSlug?: string }
 export interface SeedAudience { key: string; name: string }
 export interface SeedAgeGroup { key: string; name: string; min: number; max: number }
-export interface SeedCommunity { name: string; description: string | null; location: string | null; meetingType: string | null; organization: string | null; contactUrl: string | null; audienceKeys: string[] }
+export interface SeedCommunity { name: string; description: string | null; location: string | null; meetingType: string | null; organization: string | null; contactUrl: string | null; langId?: string; audienceKeys: string[] }
 export interface SeedArticleLink { label: string; url: string }
 export interface SeedArticle {
   ref?: string; parentRef?: string; groupKey?: string;
